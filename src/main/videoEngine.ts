@@ -52,7 +52,7 @@ export function setupVideoEngine(mainWindow: BrowserWindow) {
   // Export Video Process
   ipcMain.handle('video:process', async (_event, options) => {
     return new Promise((resolve, reject) => {
-      const { videoPath, srtPath, blurRegions, subStyle, fontSize = 32, textColor = '#ffffff', borderColor = '#000000', borderWidth = 2, addBg = false, fontFamily = 'Arial' } = options
+      const { videoPath, srtPath, blurRegions, subStyle, fontSize = 32, textColor = '#ffffff', borderColor = '#000000', borderWidth = 2, addBg = false, fontFamily = 'Arial', flipVideo = false } = options
       
       const parsedPath = path.parse(videoPath)
       const outPath = path.join(parsedPath.dir, `${parsedPath.name}_final${parsedPath.ext}`)
@@ -69,6 +69,11 @@ export function setupVideoEngine(mainWindow: BrowserWindow) {
           const fh = `max(ih*${region.h}/100\\,10)`
           complexFilter.push(`delogo=x='iw*${region.x}/100':y='ih*${region.y}/100':w='${fw}':h='${fh}'`)
         })
+      }
+
+      // 2. Flip Logic
+      if (flipVideo) {
+        complexFilter.push('hflip')
       }
 
       // Helper to convert #RRGGBB to ASS color &H00BBGGRR

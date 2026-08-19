@@ -19,6 +19,7 @@ export function EditorPage() {
   const [borderColor, setBorderColor] = useState('#000000');
   const [borderWidth, setBorderWidth] = useState(2);
   const [addBg, setAddBg] = useState(false);
+  const [flipVideo, setFlipVideo] = useState(false);
   const [currentTimeMs, setCurrentTimeMs] = useState(0);
 
   // Blur Settings State
@@ -131,7 +132,8 @@ export function EditorPage() {
         borderColor,
         borderWidth,
         addBg,
-        fontFamily
+        fontFamily,
+        flipVideo
       });
     } catch (e: any) {
       setIsProcessing(false);
@@ -601,6 +603,13 @@ export function EditorPage() {
 
           {/* Bottom Export Action inside Settings Panel */}
           <div className="settings-footer">
+            <div style={{marginBottom: '15px'}}>
+              <label className="checkbox-label" style={{justifyContent: 'center'}}>
+                <input type="checkbox" checked={flipVideo} onChange={(e) => setFlipVideo(e.target.checked)} />
+                <span className="checkbox-custom"></span>
+                <span style={{fontWeight: 'bold', color: 'var(--color-primary)'}}>Lật ngang video (Lách bản quyền)</span>
+              </label>
+            </div>
             <button className="btn-export-large" onClick={handleExport} disabled={isProcessing}>
               {isProcessing ? 'ĐANG XỬ LÝ...' : 'XUẤT VIDEO'}
             </button>
