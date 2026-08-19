@@ -613,11 +613,11 @@ export function EditorPage() {
                 <span style={{fontWeight: 'bold', color: 'var(--color-primary)'}}>Lật ngang video (Lách bản quyền)</span>
               </label>
             </div>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button className="btn-outline-dark" style={{flex: 1, padding: '12px', fontSize: '14px', fontWeight: 'bold'}} onClick={handlePreview} disabled={isProcessing}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <button className="btn-outline-dark" style={{padding: '12px', fontSize: '14px', fontWeight: 'bold'}} onClick={handlePreview} disabled={isProcessing}>
                 {isProcessing ? 'ĐANG XỬ LÝ...' : 'XEM TRƯỚC (15s)'}
               </button>
-              <button className="btn-export-large" style={{flex: 2}} onClick={handleExport} disabled={isProcessing}>
+              <button className="btn-export-large" onClick={handleExport} disabled={isProcessing}>
                 {isProcessing ? 'ĐANG XỬ LÝ...' : 'XUẤT VIDEO'}
               </button>
             </div>
