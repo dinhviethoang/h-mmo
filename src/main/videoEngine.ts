@@ -1,4 +1,4 @@
-import { ipcMain, dialog, BrowserWindow } from 'electron'
+import { ipcMain, dialog, BrowserWindow, shell } from 'electron'
 import ffmpeg from 'fluent-ffmpeg'
 import ffmpegStatic from 'ffmpeg-static'
 import path from 'path'
@@ -52,12 +52,18 @@ export function setupVideoEngine(mainWindow: BrowserWindow) {
   // Export Video Process
   ipcMain.handle('video:process', async (_event, options) => {
     return new Promise((resolve, reject) => {
-      const { videoPath, srtPath, blurRegions, subStyle, fontSize = 32, textColor = '#ffffff', borderColor = '#000000', borderWidth = 2, addBg = false, fontFamily = 'Arial', flipVideo = false } = options
+      const { videoPath, srtPath, blurRegions, subStyle, fontSize = 32, textColor = '#ffffff', borderColor = '#000000', borderWidth = 2, addBg = false, fontFamily = 'Arial', flipVideo = false, previewMode = false } = options
       
       const parsedPath = path.parse(videoPath)
-      const outPath = path.join(parsedPath.dir, `${parsedPath.name}_final${parsedPath.ext}`)
+      const outPath = previewMode 
+        ? path.join(parsedPath.dir, `${parsedPath.name}_preview${parsedPath.ext}`)
+        : path.join(parsedPath.dir, `${parsedPath.name}_final${parsedPath.ext}`)
       
       let command = ffmpeg(videoPath)
+      
+      if (previewMode) {
+        command = command.setDuration(15); // only 15 seconds for preview
+      }
       let complexFilter: string[] = []
 
       // 1. Blur Logic
@@ -127,6 +133,9 @@ export function setupVideoEngine(mainWindow: BrowserWindow) {
         .on('end', () => {
           mainWindow.webContents.send('video:log', '====== XUẤT VIDEO HOÀN TẤT ======')
           mainWindow.webContents.send('video:log', `Đã lưu tại: ${outPath}`)
+          if (previewMode) {
+            shell.openPath(outPath);
+          }
           resolve(outPath)
         })
         .on('error', (err) => {
