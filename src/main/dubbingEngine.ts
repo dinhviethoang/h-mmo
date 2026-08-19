@@ -165,7 +165,8 @@ export function setupDubbingEngine(mainWindow: BrowserWindow) {
           
           // Read PCM and place into master buffer
           const pcmData = fs.readFileSync(tempPcm);
-          const offset = Math.floor(cue.startSec * SAMPLE_RATE * BYTES_PER_SAMPLE);
+          const sampleIndex = Math.floor(cue.startSec * SAMPLE_RATE);
+          const offset = sampleIndex * BYTES_PER_SAMPLE;
           
           // Ensure we don't write out of bounds
           if (offset < masterBuffer.length) {
