@@ -27,6 +27,7 @@ export function EditorPage() {
 
   // Dubbing Settings
   const [voiceId, setVoiceId] = useState('google-free');
+  const [enableDubbing, setEnableDubbing] = useState(false);
   const [neeyuVoices, setNeeyuVoices] = useState<string[]>([]);
   
   const [isProcessing, setIsProcessing] = useState(false);
@@ -112,18 +113,54 @@ export function EditorPage() {
     if (path) setSrtPath(path);
   };
 
-  const handlePreview = async () => {
+  const runPipeline = async (isPreview: boolean = false) => {
     if (!videoPath) {
       setLogs(prev => [...prev, '[LỖI] Bạn chưa chọn video!']);
       return;
     }
     
     setIsProcessing(true);
-    setLogs(['Bắt đầu tạo video xem trước (15 giây)...']);
+    setLogs([isPreview ? 'Bắt đầu tạo video xem trước (15 giây)...' : 'Bắt đầu xử lý video...']);
     
     try {
+      let currentVideoPath = videoPath;
+
+      if (enableDubbing) {
+        if (!srtPath) {
+          throw new Error('Bạn cần chọn file phụ đề SRT để lồng tiếng!');
+        }
+        
+        const handleDubbingLog = (_event: any, log: string) => {
+          setLogs(prev => [...prev, log]);
+        };
+        window.electron.ipcRenderer.on('dubbing:log', handleDubbingLog);
+        
+        const isZalo = voiceId.startsWith('zalo-');
+        const isFpt = voiceId.startsWith('fpt-');
+        const apiKeyKey = isZalo ? 'zaloApiKey' : isFpt ? 'fptApiKey' : '';
+        
+        const fptKey = (window as any).fptApiKey || localStorage.getItem('fptApiKey') || '';
+        const zaloKey = (window as any).zaloApiKey || localStorage.getItem('zaloApiKey') || '';
+        
+        setLogs(prev => [...prev, '[BƯỚC 1/2] Đang lồng tiếng AI...']);
+        currentVideoPath = await window.electron.ipcRenderer.invoke('dubbing:generate', {
+          videoPath,
+          srtPath,
+          voiceId,
+          fptApiKey: fptKey,
+          zaloApiKey: zaloKey,
+          apiKey: apiKeyKey ? ((window as any)[apiKeyKey] || localStorage.getItem(apiKeyKey) || '') : '',
+          flipVideo: false,
+          previewMode: isPreview
+        });
+        
+        window.electron.ipcRenderer.removeListener('dubbing:log', handleDubbingLog);
+      }
+      
+      setLogs(prev => [...prev, enableDubbing ? '[BƯỚC 2/2] Đang áp dụng hình ảnh/phụ đề...' : 'Đang xử lý hiệu ứng hình ảnh...']);
+      
       await window.api.processVideo({
-        videoPath,
+        videoPath: currentVideoPath,
         srtPath,
         blurRegions,
         subStyle,
@@ -134,81 +171,18 @@ export function EditorPage() {
         addBg,
         fontFamily,
         flipVideo,
-        previewMode: true
-      });
-    } catch (e: any) {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleDubbing = async (isPreview: boolean = false) => {
-    if (!videoPath || !srtPath) {
-      setLogs(prev => [...prev, '[LỖI] Bạn cần chọn cả video và file phụ đề SRT!']);
-      return;
-    }
-    
-    setIsProcessing(true);
-    setLogs([isPreview ? 'Bắt đầu tạo lồng tiếng xem trước (15s)...' : 'Bắt đầu quy trình lồng tiếng...']);
-    
-    try {
-      const handleDubbingLog = (_event: any, log: string) => {
-        setLogs(prev => [...prev, log]);
-      };
-      window.electron.ipcRenderer.on('dubbing:log', handleDubbingLog);
-      
-      const isZalo = voiceId.startsWith('zalo-');
-      const isFpt = voiceId.startsWith('fpt-');
-      const apiKeyKey = isZalo ? 'zaloApiKey' : isFpt ? 'fptApiKey' : '';
-      
-      const fptKey = (window as any).fptApiKey || localStorage.getItem('fptApiKey') || '';
-      const zaloKey = (window as any).zaloApiKey || localStorage.getItem('zaloApiKey') || '';
-      
-      await window.electron.ipcRenderer.invoke('dubbing:generate', {
-        videoPath,
-        srtPath,
-        voiceId,
-        fptApiKey: fptKey,
-        zaloApiKey: zaloKey,
-        apiKey: apiKeyKey ? ((window as any)[apiKeyKey] || localStorage.getItem(apiKeyKey) || '') : '',
-        flipVideo,
         previewMode: isPreview
       });
       
-      window.electron.ipcRenderer.removeListener('dubbing:log', handleDubbingLog);
-    } catch (err: any) {
-      setLogs((prev) => [...prev, `[LỖI]: ${err.message}`]);
+    } catch (e: any) {
+      setLogs(prev => [...prev, `[LỖI]: ${e.message}`]);
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const handleExport = async () => {
-    if (!videoPath) {
-      setLogs(prev => [...prev, '[LỖI] Bạn chưa chọn video!']);
-      return;
-    }
-    
-    setIsProcessing(true);
-    setLogs(['Bắt đầu xử lý video...']);
-    
-    try {
-      await window.api.processVideo({
-        videoPath,
-        srtPath,
-        blurRegions,
-        subStyle,
-        fontSize,
-        textColor,
-        borderColor,
-        borderWidth,
-        addBg,
-        fontFamily,
-        flipVideo
-      });
-    } catch (e: any) {
-      setIsProcessing(false);
-    }
-  };
+  const handlePreview = () => runPipeline(true);
+  const handleExport = () => runPipeline(false);
 
 
 
@@ -605,7 +579,16 @@ export function EditorPage() {
 
                 <div className="pane-divider"></div>
                 
-                <h3 className="pane-title small">Chọn Giọng Đọc</h3>
+                <div style={{marginBottom: '15px'}}>
+                  <label className="checkbox-label">
+                    <input type="checkbox" checked={enableDubbing} onChange={(e) => setEnableDubbing(e.target.checked)} />
+                    <span className="checkbox-custom"></span>
+                    <span style={{fontWeight: 'bold', color: 'var(--color-primary)'}}>Áp dụng lồng tiếng (AI Dubbing)</span>
+                  </label>
+                </div>
+
+                <div style={{opacity: enableDubbing ? 1 : 0.5, pointerEvents: enableDubbing ? 'auto' : 'none'}}>
+                  <h3 className="pane-title small">Chọn Giọng Đọc</h3>
                 <select className="form-select mb-2" value={voiceId} onChange={e => setVoiceId(e.target.value)}>
                   <optgroup label="Danh sách giọng đã Clone">
                     {neeyuVoices.map(voice => (
@@ -616,25 +599,7 @@ export function EditorPage() {
                   </optgroup>
                 </select>
 
-                <div className="pane-divider"></div>
-                <div style={{display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '16px'}}>
-                <div style={{display: 'flex', gap: '10px'}}>
-                  <button 
-                    className="btn-outline-dark" 
-                    onClick={() => handleDubbing(true)}
-                    disabled={isProcessing || !videoPath || !srtPath}
-                    style={{flex: 1, padding: '12px', fontSize: '14px', fontWeight: 'bold'}}
-                  >
-                    {isProcessing ? 'ĐANG XỬ LÝ...' : 'XEM TRƯỚC (15s)'}
-                  </button>
-                  <button 
-                    className="btn-export" 
-                    onClick={() => handleDubbing(false)}
-                    disabled={isProcessing || !videoPath || !srtPath}
-                    style={{flex: 2}}
-                  >
-                    {isProcessing ? 'ĐANG LỒNG TIẾNG...' : 'BẮT ĐẦU LỒNG TIẾNG'}
-                  </button>
+                
                 </div>
                 <span style={{fontSize: '12px', color: 'var(--color-text-muted)', textAlign: 'center'}}>
                   Lưu ý: Video lồng tiếng sẽ được xuất ra file mới ngay lập tức.

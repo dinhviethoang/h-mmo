@@ -233,9 +233,6 @@ export function setupDubbingEngine(mainWindow: BrowserWindow) {
         
         log(`====== HOÀN TẤT ======`);
         log(`Video lồng tiếng đã lưu tại: ${outVideoPath}`);
-        if (previewMode) {
-          shell.openPath(outVideoPath);
-        }
         resolve(outVideoPath);
       } catch (err: any) {
         log(`[LỖI] ${err.message}`);
