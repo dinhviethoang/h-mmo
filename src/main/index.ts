@@ -114,7 +114,8 @@ app.whenReady().then(() => {
         flatPlaylist: true,
         noWarnings: true,
         noCallHome: true,
-        noCheckCertificate: true
+        noCheckCertificate: true,
+        extractorArgs: 'youtube:player_client=android'
       });
       return output;
     } catch (e: any) {
@@ -135,7 +136,8 @@ app.whenReady().then(() => {
             output: path.join(savePath, '%(title)s.%(ext)s'),
             noWarnings: true,
             noCheckCertificate: true,
-            format: 'bestvideo+bestaudio/best'
+            format: 'bestvideo+bestaudio/best',
+            extractorArgs: 'youtube:player_client=android'
           };
           if (cookie && cookie !== 'none') {
             if (cookie.endsWith('.txt')) {

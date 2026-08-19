@@ -599,11 +599,6 @@ export function EditorPage() {
                   </optgroup>
                 </select>
 
-                
-                </div>
-                <span style={{fontSize: '12px', color: 'var(--color-text-muted)', textAlign: 'center'}}>
-                  Lưu ý: Video lồng tiếng sẽ được xuất ra file mới ngay lập tức.
-                </span>
                 </div>
               </div>
             )}

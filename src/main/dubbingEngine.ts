@@ -1,4 +1,4 @@
-import { ipcMain, BrowserWindow, app, shell } from 'electron'
+import { ipcMain, BrowserWindow, app } from 'electron'
 import path from 'path'
 import fs from 'fs'
 const ffmpeg = require('fluent-ffmpeg');
