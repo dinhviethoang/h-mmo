@@ -141,6 +141,47 @@ export function EditorPage() {
     }
   };
 
+  const handleDubbing = async (isPreview: boolean = false) => {
+    if (!videoPath || !srtPath) {
+      setLogs(prev => [...prev, '[LỖI] Bạn cần chọn cả video và file phụ đề SRT!']);
+      return;
+    }
+    
+    setIsProcessing(true);
+    setLogs([isPreview ? 'Bắt đầu tạo lồng tiếng xem trước (15s)...' : 'Bắt đầu quy trình lồng tiếng...']);
+    
+    try {
+      const handleDubbingLog = (_event: any, log: string) => {
+        setLogs(prev => [...prev, log]);
+      };
+      window.electron.ipcRenderer.on('dubbing:log', handleDubbingLog);
+      
+      const isZalo = voiceId.startsWith('zalo-');
+      const isFpt = voiceId.startsWith('fpt-');
+      const apiKeyKey = isZalo ? 'zaloApiKey' : isFpt ? 'fptApiKey' : '';
+      
+      const fptKey = (window as any).fptApiKey || localStorage.getItem('fptApiKey') || '';
+      const zaloKey = (window as any).zaloApiKey || localStorage.getItem('zaloApiKey') || '';
+      
+      await window.electron.ipcRenderer.invoke('dubbing:generate', {
+        videoPath,
+        srtPath,
+        voiceId,
+        fptApiKey: fptKey,
+        zaloApiKey: zaloKey,
+        apiKey: apiKeyKey ? ((window as any)[apiKeyKey] || localStorage.getItem(apiKeyKey) || '') : '',
+        flipVideo,
+        previewMode: isPreview
+      });
+      
+      window.electron.ipcRenderer.removeListener('dubbing:log', handleDubbingLog);
+    } catch (err: any) {
+      setLogs((prev) => [...prev, `[LỖI]: ${err.message}`]);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const handleExport = async () => {
     if (!videoPath) {
       setLogs(prev => [...prev, '[LỖI] Bạn chưa chọn video!']);
@@ -577,55 +618,27 @@ export function EditorPage() {
 
                 <div className="pane-divider"></div>
                 <div style={{display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '16px'}}>
+                <div style={{display: 'flex', gap: '10px'}}>
+                  <button 
+                    className="btn-outline-dark" 
+                    onClick={() => handleDubbing(true)}
+                    disabled={isProcessing || !videoPath || !srtPath}
+                    style={{flex: 1, padding: '12px', fontSize: '14px', fontWeight: 'bold'}}
+                  >
+                    {isProcessing ? 'ĐANG XỬ LÝ...' : 'XEM TRƯỚC (15s)'}
+                  </button>
                   <button 
                     className="btn-export" 
-                    onClick={async () => {
-                      if (!videoPath || !srtPath) {
-                        setLogs(prev => [...prev, '[LỖI] Bạn cần chọn cả video và file phụ đề SRT!']);
-                        return;
-                      }
-                      
-                      setIsProcessing(true);
-                      setLogs(['Bắt đầu quy trình lồng tiếng...']);
-                      
-                      try {
-                        const handleDubbingLog = (_event: any, log: string) => {
-                          setLogs(prev => [...prev, log]);
-                        };
-                        window.electron.ipcRenderer.on('dubbing:log', handleDubbingLog);
-                        
-                        const isZalo = voiceId.startsWith('zalo-');
-                        const isFpt = voiceId.startsWith('fpt-');
-                        const apiKeyKey = isZalo ? 'zaloApiKey' : isFpt ? 'fptApiKey' : '';
-                        
-                        const fptKey = (window as any).fptApiKey || localStorage.getItem('fptApiKey') || '';
-                        const zaloKey = (window as any).zaloApiKey || localStorage.getItem('zaloApiKey') || '';
-                        
-                        await window.electron.ipcRenderer.invoke('dubbing:generate', {
-                          videoPath,
-                          srtPath,
-                          voiceId,
-                          fptApiKey: fptKey,
-                          zaloApiKey: zaloKey,
-                          apiKey: apiKeyKey ? ((window as any)[apiKeyKey] || localStorage.getItem(apiKeyKey) || '') : '',
-                          flipVideo
-                        });
-                        
-                        window.electron.ipcRenderer.removeListener('dubbing:log', handleDubbingLog);
-                      } catch (err: any) {
-                        setLogs((prev) => [...prev, `[LỖI]: ${err.message}`]);
-                      } finally {
-                        setIsProcessing(false);
-                      }
-                    }}
+                    onClick={() => handleDubbing(false)}
                     disabled={isProcessing || !videoPath || !srtPath}
-                    style={{width: '100%'}}
+                    style={{flex: 2}}
                   >
-                    {isProcessing ? 'Đang Lồng Tiếng...' : 'Bắt Đầu Lồng Tiếng'}
+                    {isProcessing ? 'ĐANG LỒNG TIẾNG...' : 'BẮT ĐẦU LỒNG TIẾNG'}
                   </button>
-                  <span style={{fontSize: '12px', color: 'var(--color-text-muted)', textAlign: 'center'}}>
-                    Lưu ý: Video lồng tiếng sẽ được xuất ra file mới ngay lập tức.
-                  </span>
+                </div>
+                <span style={{fontSize: '12px', color: 'var(--color-text-muted)', textAlign: 'center'}}>
+                  Lưu ý: Video lồng tiếng sẽ được xuất ra file mới ngay lập tức.
+                </span>
                 </div>
               </div>
             )}

@@ -1,4 +1,4 @@
-import { ipcMain, BrowserWindow, app } from 'electron'
+import { ipcMain, BrowserWindow, app, shell } from 'electron'
 import path from 'path'
 import fs from 'fs'
 const ffmpeg = require('fluent-ffmpeg');
@@ -66,11 +66,13 @@ function parseSrt(srtContent: string) {
 export function setupDubbingEngine(mainWindow: BrowserWindow) {
   ipcMain.handle('dubbing:generate', async (_event, options) => {
     return new Promise(async (resolve, reject) => {
-      const { videoPath, srtPath, voiceId, flipVideo } = options;
+      const { videoPath, srtPath, voiceId, flipVideo, previewMode } = options;
       const log = (msg: string) => mainWindow.webContents.send('dubbing:log', msg);
       
       const parsedPath = path.parse(videoPath);
-      const outVideoPath = path.join(parsedPath.dir, `${parsedPath.name}_dubbed.mp4`);
+      const outVideoPath = previewMode 
+        ? path.join(parsedPath.dir, `${parsedPath.name}_dubbed_preview${parsedPath.ext}`)
+        : path.join(parsedPath.dir, `${parsedPath.name}_dubbed${parsedPath.ext}`);
       const tempDir = app.getPath('temp');
       const masterPcmPath = path.join(tempDir, `master_${parsedPath.name}.pcm`);
       
@@ -78,7 +80,10 @@ export function setupDubbingEngine(mainWindow: BrowserWindow) {
         log('Bắt đầu quy trình lồng tiếng...');
         log('Đọc file phụ đề SRT...');
         const srtContent = fs.readFileSync(srtPath, 'utf8');
-        const cues = parseSrt(srtContent);
+        let cues = parseSrt(srtContent);
+        if (previewMode) {
+          cues = cues.filter(c => c.startSec < 15);
+        }
         log(`Tìm thấy ${cues.length} câu thoại.`);
         
         log('Đang phân tích thời lượng video gốc...');
@@ -204,6 +209,10 @@ export function setupDubbingEngine(mainWindow: BrowserWindow) {
           } else {
             oOpts.unshift('-map', '0:v', '-c:v', 'copy');
           }
+          
+          if (previewMode) {
+            oOpts.push('-t', '15');
+          }
 
           ffmpeg(videoPath)
             .input(masterPcmPath)
@@ -224,6 +233,9 @@ export function setupDubbingEngine(mainWindow: BrowserWindow) {
         
         log(`====== HOÀN TẤT ======`);
         log(`Video lồng tiếng đã lưu tại: ${outVideoPath}`);
+        if (previewMode) {
+          shell.openPath(outVideoPath);
+        }
         resolve(outVideoPath);
       } catch (err: any) {
         log(`[LỖI] ${err.message}`);
