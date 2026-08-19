@@ -193,12 +193,13 @@ export function setupDubbingEngine(mainWindow: BrowserWindow) {
             ])
             .complexFilter([
               '[0:a]volume=0.15[bg]',
-              '[1:a]volume=1.5[dub]',
-              '[bg][dub]amix=inputs=2:duration=first[a]'
+              '[1:a]volume=1.0[dub]',
+              '[bg][dub]amix=inputs=2:duration=first[a]',
+              '[a]alimiter=limit=-1.0dB[aout]'
             ])
             .outputOptions([
               '-map', '0:v',
-              '-map', '[a]',
+              '-map', '[aout]',
               '-c:v', 'copy',
               '-c:a', 'aac',
               '-b:a', '192k'
