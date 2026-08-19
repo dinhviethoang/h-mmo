@@ -66,7 +66,7 @@ function parseSrt(srtContent: string) {
 export function setupDubbingEngine(mainWindow: BrowserWindow) {
   ipcMain.handle('dubbing:generate', async (_event, options) => {
     return new Promise(async (resolve, reject) => {
-      const { videoPath, srtPath, voiceId } = options;
+      const { videoPath, srtPath, voiceId, flipVideo } = options;
       const log = (msg: string) => mainWindow.webContents.send('dubbing:log', msg);
       
       const parsedPath = path.parse(videoPath);
@@ -185,6 +185,26 @@ export function setupDubbingEngine(mainWindow: BrowserWindow) {
         log('Đang ghép âm thanh lồng tiếng vào video (Audio Mixing & Ducking)...');
         // Mix: original audio volume at 15%, dubbing audio at 100%
         await new Promise((res, rej) => {
+          let cFilter = [
+            '[0:a]volume=0.15[bg]',
+            '[1:a]volume=1.0[dub]',
+            '[bg][dub]amix=inputs=2:duration=first[a]',
+            '[a]alimiter=limit=-1.0dB[aout]'
+          ];
+          
+          let oOpts = [
+            '-map', '[aout]',
+            '-c:a', 'aac',
+            '-b:a', '192k'
+          ];
+          
+          if (flipVideo) {
+            cFilter.push('[0:v]hflip[vout]');
+            oOpts.unshift('-map', '[vout]', '-c:v', 'libx264', '-preset', 'fast');
+          } else {
+            oOpts.unshift('-map', '0:v', '-c:v', 'copy');
+          }
+
           ffmpeg(videoPath)
             .input(masterPcmPath)
             .inputOptions([
@@ -192,19 +212,8 @@ export function setupDubbingEngine(mainWindow: BrowserWindow) {
               '-ar', '24000',
               '-ac', '1'
             ])
-            .complexFilter([
-              '[0:a]volume=0.15[bg]',
-              '[1:a]volume=1.0[dub]',
-              '[bg][dub]amix=inputs=2:duration=first[a]',
-              '[a]alimiter=limit=-1.0dB[aout]'
-            ])
-            .outputOptions([
-              '-map', '0:v',
-              '-map', '[aout]',
-              '-c:v', 'copy',
-              '-c:a', 'aac',
-              '-b:a', '192k'
-            ])
+            .complexFilter(cFilter)
+            .outputOptions(oOpts)
             .on('end', res)
             .on('error', rej)
             .save(outVideoPath);

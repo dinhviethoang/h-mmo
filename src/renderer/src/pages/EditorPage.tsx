@@ -578,7 +578,8 @@ export function EditorPage() {
                           voiceId,
                           fptApiKey: fptKey,
                           zaloApiKey: zaloKey,
-                          apiKey: apiKeyKey ? ((window as any)[apiKeyKey] || localStorage.getItem(apiKeyKey) || '') : ''
+                          apiKey: apiKeyKey ? ((window as any)[apiKeyKey] || localStorage.getItem(apiKeyKey) || '') : '',
+                          flipVideo
                         });
                         
                         window.electron.ipcRenderer.removeListener('dubbing:log', handleDubbingLog);
