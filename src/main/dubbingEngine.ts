@@ -77,6 +77,7 @@ export function setupDubbingEngine(mainWindow: BrowserWindow) {
       const masterPcmPath = path.join(tempDir, `master_${parsedPath.name}.pcm`);
       
       try {
+        const processStartTime = Date.now();
         log('Bắt đầu quy trình lồng tiếng...');
         log('Đọc file phụ đề SRT...');
         const srtContent = fs.readFileSync(srtPath, 'utf8');
@@ -175,7 +176,15 @@ export function setupDubbingEngine(mainWindow: BrowserWindow) {
           log(`[${i+1}/${cues.length}] ✓ Hoàn thành`);
         };
         
+        // Helper: format seconds to mm:ss
+        const fmtTime = (s: number) => {
+          const m = Math.floor(s / 60);
+          const sec = Math.floor(s % 60);
+          return `${m}:${sec.toString().padStart(2, '0')}`;
+        };
+        
         // Process cues in parallel batches
+        const ttsStartTime = Date.now();
         let completed = 0;
         for (let batch = 0; batch < cues.length; batch += CONCURRENCY) {
           const batchEnd = Math.min(batch + CONCURRENCY, cues.length);
@@ -185,10 +194,19 @@ export function setupDubbingEngine(mainWindow: BrowserWindow) {
           }
           await Promise.all(batchPromises);
           completed = batchEnd;
-          log(`--- Batch ${Math.floor(batch/CONCURRENCY) + 1}/${Math.ceil(cues.length/CONCURRENCY)} hoàn thành (${completed}/${cues.length} câu) ---`);
+          
+          // Calculate elapsed and ETA
+          const elapsedMs = Date.now() - ttsStartTime;
+          const elapsedSec = elapsedMs / 1000;
+          const avgPerCue = elapsedSec / completed;
+          const remaining = cues.length - completed;
+          const etaSec = avgPerCue * remaining;
+          
+          log(`--- Batch ${Math.floor(batch/CONCURRENCY) + 1}/${Math.ceil(cues.length/CONCURRENCY)} hoàn thành (${completed}/${cues.length} câu) | ⏱ ${fmtTime(elapsedSec)} đã chạy | ⏳ ~${fmtTime(etaSec)} còn lại ---`);
         }
         
-        log('Đã tạo xong luồng âm thanh lồng tiếng. Đang lưu ra file tạm...');
+        const totalTtsTime = (Date.now() - ttsStartTime) / 1000;
+        log(`✅ Tạo giọng nói hoàn tất trong ${fmtTime(totalTtsTime)}. Đang lưu ra file tạm...`);
         fs.writeFileSync(masterPcmPath, masterBuffer);
         
         log('Đang ghép âm thanh lồng tiếng vào video (Audio Mixing & Ducking)...');
@@ -235,7 +253,8 @@ export function setupDubbingEngine(mainWindow: BrowserWindow) {
         // Cleanup master PCM
         if (fs.existsSync(masterPcmPath)) fs.unlinkSync(masterPcmPath);
         
-        log(`====== HOÀN TẤT ======`);
+        const totalProcessTime = (Date.now() - processStartTime) / 1000;
+        log(`====== HOÀN TẤT (tổng thời gian: ${fmtTime(totalProcessTime)}) ======`);
         log(`Video lồng tiếng đã lưu tại: ${outVideoPath}`);
         resolve(outVideoPath);
       } catch (err: any) {
