@@ -95,93 +95,97 @@ export function setupDubbingEngine(mainWindow: BrowserWindow) {
         const bufferSize = Math.ceil(totalDuration * SAMPLE_RATE * BYTES_PER_SAMPLE);
         const masterBuffer = Buffer.alloc(bufferSize, 0); // Filled with silence
         
-        log('Bắt đầu tạo giọng nói (TTS) cho từng câu...');
+        // --- PARALLEL TTS: Use all CPU cores ---
+        const os = require('os');
+        const { spawn } = require('child_process');
+        const CONCURRENCY = Math.min(os.cpus().length, 8); // Cap at 8 to avoid overloading
+        log(`Bắt đầu tạo giọng nói (TTS) - ${CONCURRENCY} luồng song song (${os.cpus().length} CPU cores)...`);
         
-        let currentVoiceId = voiceId;
+        // Pre-resolve NeeyuVoice paths once
+        let voiceName = '';
+        let engineExe = '';
+        let voicesDir = '';
+        let modelsDir = '';
         
-        for (let i = 0; i < cues.length; i++) {
+        if (voiceId.startsWith('neeyu-')) {
+          voiceName = voiceId.replace('neeyu-', '');
+          const neeyuDir = path.join(os.homedir(), 'AppData', 'Roaming', 'NeeyuVoice');
+          engineExe = path.join(neeyuDir, 'runtime', 'engines', 'win-x64', 'cpu', 'vietnamese', 'neeyuvoice-engine.exe');
+          voicesDir = path.join(neeyuDir, 'voices');
+          modelsDir = path.join(neeyuDir, 'runtime', 'models', 'neeyuvoice-vietnamese');
+          if (!fs.existsSync(engineExe)) throw new Error("Không tìm thấy Engine NeeyuVoice. Vui lòng cài đặt NeeyuVoice.");
+        } else {
+          throw new Error("Giọng đọc không được hỗ trợ: " + voiceId);
+        }
+        
+        // Worker function: generate TTS + convert to PCM for a single cue
+        const processCue = async (i: number) => {
           const cue = cues[i];
-          log(`Đang tạo audio [${i+1}/${cues.length}]: "${cue.text.substring(0, 30)}..."`);
+          log(`[${i+1}/${cues.length}] Đang tạo: "${cue.text.substring(0, 40)}..."`);
           
           const tempMp3 = path.join(tempDir, `cue_${i}.mp3`);
           const tempPcm = path.join(tempDir, `cue_${i}.pcm`);
           
-          // TTS Generation via APIs
-
-          let cueSuccess = false;
-          
-          while (!cueSuccess) {
-            try {
-              if (currentVoiceId.startsWith('neeyu-')) {
-                const voiceName = currentVoiceId.replace('neeyu-', '');
-                const os = require('os');
-                const neeyuDir = path.join(os.homedir(), 'AppData', 'Roaming', 'NeeyuVoice');
-                const engineExe = path.join(neeyuDir, 'runtime', 'engines', 'win-x64', 'cpu', 'vietnamese', 'neeyuvoice-engine.exe');
-                const voicesDir = path.join(neeyuDir, 'voices');
-                const modelsDir = path.join(neeyuDir, 'runtime', 'models', 'neeyuvoice-vietnamese');
-                
-                if (!fs.existsSync(engineExe)) throw new Error("Không tìm thấy Engine NeeyuVoice. Vui lòng cài đặt NeeyuVoice.");
-                
-                log(`[NeeyuVoice] Đang tạo âm thanh (Offline CPU)...`);
-                
-                const { spawn } = require('child_process');
-                await new Promise<void>((resolve, reject) => {
-                  const process = spawn(engineExe, [
-                    '--voices-dir', voicesDir,
-                    '--models-dir', modelsDir,
-                    'generate',
-                    '--text', cue.text,
-                    '--voice', voiceName,
-                    '--out', tempMp3,
-                    '--no-watermark'
-                  ]);
-                  
-                  process.stdout.on('data', (data) => {
-                    const lines = data.toString().split('\n');
-                    for (const line of lines) {
-                      if (!line.trim()) continue;
-                      try {
-                        const parsed = JSON.parse(line);
-                        if (parsed.type === 'error') reject(new Error(parsed.message));
-                      } catch (e) {
-                         // Ignore non-json logs
-                      }
-                    }
-                  });
-                  
-                  process.on('close', (code) => {
-                    if (code === 0) resolve();
-                    else reject(new Error(`NeeyuVoice process exited with code ${code}`));
-                  });
-                });
-                
-                cueSuccess = true;
-                
-              } else {
-                 throw new Error("Giọng đọc không được hỗ trợ: " + currentVoiceId);
+          // TTS Generation
+          await new Promise<void>((resolve, reject) => {
+            const proc = spawn(engineExe, [
+              '--voices-dir', voicesDir,
+              '--models-dir', modelsDir,
+              'generate',
+              '--text', cue.text,
+              '--voice', voiceName,
+              '--out', tempMp3,
+              '--no-watermark'
+            ]);
+            
+            proc.stdout.on('data', (data: Buffer) => {
+              const lines = data.toString().split('\n');
+              for (const line of lines) {
+                if (!line.trim()) continue;
+                try {
+                  const parsed = JSON.parse(line);
+                  if (parsed.type === 'error') reject(new Error(parsed.message));
+                } catch (e) { /* Ignore non-json logs */ }
               }
-            } catch (err: any) {
-              throw err;
-            }
-          }
+            });
+            
+            proc.on('close', (code: number) => {
+              if (code === 0) resolve();
+              else reject(new Error(`NeeyuVoice process exited with code ${code}`));
+            });
+          });
           
-          // Convert to PCM
+          // Convert MP3 to PCM
           await mp3ToPcm(tempMp3, tempPcm);
           
-          // Read PCM and place into master buffer
+          // Read PCM and place into master buffer at correct time offset
           const pcmData = fs.readFileSync(tempPcm);
           const sampleIndex = Math.floor(cue.startSec * SAMPLE_RATE);
           const offset = sampleIndex * BYTES_PER_SAMPLE;
           
-          // Ensure we don't write out of bounds
           if (offset < masterBuffer.length) {
             const bytesToWrite = Math.min(pcmData.length, masterBuffer.length - offset);
             pcmData.copy(masterBuffer, offset, 0, bytesToWrite);
           }
           
-          // Cleanup temps
+          // Cleanup temp files
           if (fs.existsSync(tempMp3)) fs.unlinkSync(tempMp3);
           if (fs.existsSync(tempPcm)) fs.unlinkSync(tempPcm);
+          
+          log(`[${i+1}/${cues.length}] ✓ Hoàn thành`);
+        };
+        
+        // Process cues in parallel batches
+        let completed = 0;
+        for (let batch = 0; batch < cues.length; batch += CONCURRENCY) {
+          const batchEnd = Math.min(batch + CONCURRENCY, cues.length);
+          const batchPromises: Promise<void>[] = [];
+          for (let i = batch; i < batchEnd; i++) {
+            batchPromises.push(processCue(i));
+          }
+          await Promise.all(batchPromises);
+          completed = batchEnd;
+          log(`--- Batch ${Math.floor(batch/CONCURRENCY) + 1}/${Math.ceil(cues.length/CONCURRENCY)} hoàn thành (${completed}/${cues.length} câu) ---`);
         }
         
         log('Đã tạo xong luồng âm thanh lồng tiếng. Đang lưu ra file tạm...');
