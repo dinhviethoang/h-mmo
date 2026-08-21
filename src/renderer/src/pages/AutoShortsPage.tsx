@@ -11,28 +11,28 @@ export function AutoShortsPage() {
       <div className="editor-header">
         <h2>Auto Shorts (Veo 3 AI)</h2>
         <div style={{ display: 'flex', gap: '10px' }}>
-          <button className={`btn-outline-dark ${activeTask === 1 ? 'active' : ''}`} onClick={() => setActiveTask(1)}>Tab 1: Qu?n l� N?i Dung</button>
-          <button className={`btn-outline-dark ${activeTask === 2 ? 'active' : ''}`} onClick={() => setActiveTask(2)}>Tab 2: Render Video T? �?ng</button>
+          <button className={`btn-outline-dark ${activeTask === 1 ? 'active' : ''}`} onClick={() => setActiveTask(1)}>Tab 1: Quản lý Nội Dung</button>
+          <button className={`btn-outline-dark ${activeTask === 2 ? 'active' : ''}`} onClick={() => setActiveTask(2)}>Tab 2: Render Video Tự Động</button>
         </div>
       </div>
 
       <div className="main-content" style={{ padding: '20px', color: '#fff' }}>
         {activeTask === 1 && (
           <div className="panel">
-            <h3 className="section-title">Qu?n l� n?i dung (K?ch b?n)</h3>
-            <p>Nh?p k?ch b?n ho?c Upload file Excel ch?a danh s�ch c�c c�u n�i hay d? chu?n b? l�m video.</p>
-            <textarea className="form-control" rows={10} placeholder="Nh?p tr�ch d?n s�ch v�o d�y..."></textarea>
-            <button className="btn-export-large mt-3" style={{ width: '200px' }}>Luu K?ch B?n</button>
+            <h3 className="section-title">Quản lý nội dung (Kịch bản)</h3>
+            <p>Nhập kịch bản hoặc Upload file Excel chứa danh sách các câu nói hay để chuẩn bị làm video.</p>
+            <textarea className="form-control" rows={10} placeholder="Nhập trích dẫn sách vào đây..."></textarea>
+            <button className="btn-export-large mt-3" style={{ width: '200px' }}>Lưu Kịch Bản</button>
           </div>
         )}
 
         {activeTask === 2 && (
           <div className="panel">
-            <h3 className="section-title">S?n xu?t Video T? �?ng (Google Veo 3)</h3>
-            <p>H? th?ng s? l?y d? li?u t? Tab 1, t? d?ng g?i Veo 3 v? h�nh n?n, t? d?ng l?ng ti?ng, v� render ra video 9:16 ho�n ch?nh.</p>
+            <h3 className="section-title">Sản xuất Video Tự Động (Google Veo 3)</h3>
+            <p>Hệ thống sẽ lấy dữ liệu từ Tab 1, tự động gọi Veo 3 vẽ hình nền, tự động lồng tiếng, và render ra video 9:16 hoàn chỉnh.</p>
             <label className="input-label mt-2">Google Veo 3 API Key</label>
-            <input type="password" className="form-control mb-3" placeholder="Nh?p API Key c?a b?n..." value={apiKey} onChange={(e) => setApiKey(e.target.value)} />
-            <button className="btn-export-large mt-3" style={{ width: '300px' }}>B?t �?u Render H�ng Lo?t</button>
+            <input type="password" className="form-control mb-3" placeholder="Nhập API Key của bạn..." value={apiKey} onChange={(e) => setApiKey(e.target.value)} />
+            <button className="btn-export-large mt-3" style={{ width: '300px' }}>Bắt Đầu Render Hàng Loạt</button>
           </div>
         )}
       </div>
