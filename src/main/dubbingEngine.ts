@@ -99,8 +99,14 @@ export function setupDubbingEngine(mainWindow: BrowserWindow) {
         // --- PARALLEL TTS: Use all CPU cores ---
         const os = require('os');
         const { spawn } = require('child_process');
-        const CONCURRENCY = Math.min(os.cpus().length, 4); // Cap at 4 to avoid OOM crashes
-        log(`Bắt đầu tạo giọng nói (TTS) - ${CONCURRENCY} luồng song song (${os.cpus().length} CPU cores)...`);
+        
+        // Dynamically calculate concurrency based on total RAM to avoid OOM and heavy swapping
+        const totalRAM_GB = os.totalmem() / (1024 ** 3);
+        let CONCURRENCY = 1;
+        if (totalRAM_GB >= 30) CONCURRENCY = 4;
+        else if (totalRAM_GB >= 14) CONCURRENCY = 2;
+        
+        log(`Bắt đầu tạo giọng nói (TTS) - ${CONCURRENCY} luồng song song (${os.cpus().length} CPU cores, ${Math.round(totalRAM_GB)}GB RAM)...`);
         
         // Pre-resolve NeeyuVoice paths once
         let voiceName = '';
