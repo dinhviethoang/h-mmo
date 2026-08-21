@@ -52,7 +52,7 @@ export function setupVideoEngine(mainWindow: BrowserWindow) {
   // Export Video Process
   ipcMain.handle('video:process', async (_event, options) => {
     return new Promise((resolve, reject) => {
-      const { videoPath, srtPath, blurRegions, subStyle, fontSize = 32, textColor = '#ffffff', borderColor = '#000000', borderWidth = 2, addBg = false, fontFamily = 'Arial', flipVideo = false, applySubtitles = true, previewMode = false } = options
+      const { videoPath, dubbedAudioPath, srtPath, blurRegions, subStyle, fontSize = 32, textColor = '#ffffff', borderColor = '#000000', borderWidth = 2, addBg = false, fontFamily = 'Arial', flipVideo = false, applySubtitles = true, previewMode = false } = options
       
       const parsedPath = path.parse(videoPath)
       const outPath = previewMode 
@@ -64,7 +64,7 @@ export function setupVideoEngine(mainWindow: BrowserWindow) {
       if (previewMode) {
         command = command.setDuration(15); // only 15 seconds for preview
       }
-      let complexFilter: string[] = []
+      let vFilters: string[] = []
 
       // 1. Blur Logic
       if (blurRegions && Array.isArray(blurRegions)) {
@@ -79,7 +79,7 @@ export function setupVideoEngine(mainWindow: BrowserWindow) {
 
       // 2. Flip Logic
       if (flipVideo) {
-        complexFilter.push('hflip')
+        vFilters.push('hflip')
       }
 
       // Helper to convert #RRGGBB to ASS color &H00BBGGRR
@@ -112,16 +112,46 @@ export function setupVideoEngine(mainWindow: BrowserWindow) {
 
         const style = `FontName=${fontFamily},Alignment=${alignment},MarginV=${marginV},FontSize=${fontSize},PrimaryColour=${assTextColor},OutlineColour=${assBorderColor},BackColour=${assBgColor},BorderStyle=${borderStyleVal},Outline=${outlineVal},Shadow=0,Bold=-1`
         const subFilter = `subtitles='${srtClean}':force_style='${style}'`
-        complexFilter.push(subFilter)
+        vFilters.push(subFilter)
       }
 
-      if (complexFilter.length > 0) {
-        command = command.videoFilters(complexFilter)
+      let filterChain: string[] = [];
+      let videoPad = '0:v';
+      
+      if (vFilters.length > 0) {
+        filterChain.push([0:v][vout]);
+        videoPad = '[vout]';
+      }
+
+      let outputOptions: string[] = ['-y'];
+
+      if (dubbedAudioPath && fs.existsSync(dubbedAudioPath)) {
+        command = command.input(dubbedAudioPath)
+          .inputOptions([
+            '-f', 's16le',
+            '-ar', '24000',
+            '-ac', '1'
+          ]);
+          
+        filterChain.push('[0:a]volume=0.15[bg]');
+        filterChain.push('[1:a]volume=1.0[dub]');
+        filterChain.push('[bg][dub]amix=inputs=2:duration=first[amix]');
+        filterChain.push('[amix]alimiter=limit=-1.0dB[aout]');
+        
+        outputOptions.push('-map', videoPad, '-map', '[aout]', '-c:v', 'libx264', '-preset', 'fast', '-c:a', 'aac', '-b:a', '192k');
+      } else {
+        outputOptions.push('-map', videoPad, '-map', '0:a?', '-c:v', 'libx264', '-preset', 'fast', '-c:a', 'copy');
+      }
+
+      if (filterChain.length > 0) {
+        command = command.complexFilter(filterChain);
+      } else {
+        // If NO filters at all, we don't need to re-encode video unless we want to, but we mapped it so we should.
       }
 
 
       command.output(outPath)
-        .outputOptions('-y')
+        .outputOptions(outputOptions)
         .on('start', (cmdline) => {
           console.log('Spawned Ffmpeg with command: ' + cmdline)
           mainWindow.webContents.send('video:log', 'Bắt đầu tiến trình xuất video...')

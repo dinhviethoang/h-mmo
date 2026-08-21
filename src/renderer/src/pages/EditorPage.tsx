@@ -124,7 +124,7 @@ export function EditorPage() {
     setLogs([isPreview ? 'Bắt đầu tạo video xem trước (15 giây)...' : 'Bắt đầu xử lý video...']);
     
     try {
-      let currentVideoPath = videoPath;
+      let dubbedAudioPath: string | null = null;
 
       if (enableDubbing) {
         if (!srtPath) {
@@ -144,7 +144,7 @@ export function EditorPage() {
         const zaloKey = (window as any).zaloApiKey || localStorage.getItem('zaloApiKey') || '';
         
         setLogs(prev => [...prev, '[BƯỚC 1/2] Đang lồng tiếng AI...']);
-        currentVideoPath = await window.electron.ipcRenderer.invoke('dubbing:generate', {
+        dubbedAudioPath = await window.electron.ipcRenderer.invoke('dubbing:generate', {
           videoPath,
           srtPath,
           voiceId,
@@ -161,7 +161,8 @@ export function EditorPage() {
       setLogs(prev => [...prev, enableDubbing ? '[BƯỚC 2/2] Đang áp dụng hình ảnh/phụ đề...' : 'Đang xử lý hiệu ứng hình ảnh...']);
       
       await window.api.processVideo({
-        videoPath: currentVideoPath,
+        videoPath,
+        dubbedAudioPath,
         srtPath,
         blurRegions,
         subStyle,

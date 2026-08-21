@@ -222,57 +222,12 @@ export function setupDubbingEngine(mainWindow: BrowserWindow) {
         }
         
         const totalTtsTime = (Date.now() - ttsStartTime) / 1000;
-        log(`✅ Tạo giọng nói hoàn tất trong ${fmtTime(totalTtsTime)}. Đang lưu ra file tạm...`);
+        log(`✅ Tạo giọng nói hoàn tất trong ${fmtTime(totalTtsTime)}.`);
         fs.writeFileSync(masterPcmPath, masterBuffer);
         
-        log('Đang ghép âm thanh lồng tiếng vào video (Audio Mixing & Ducking)...');
-        // Mix: original audio volume at 15%, dubbing audio at 100%
-        await new Promise((res, rej) => {
-          let cFilter = [
-            '[0:a]volume=0.15[bg]',
-            '[1:a]volume=1.0[dub]',
-            '[bg][dub]amix=inputs=2:duration=first[a]',
-            '[a]alimiter=limit=-1.0dB[aout]'
-          ];
-          
-          let oOpts = [
-            '-map', '[aout]',
-            '-c:a', 'aac',
-            '-b:a', '192k'
-          ];
-          
-          if (flipVideo) {
-            cFilter.push('[0:v]hflip[vout]');
-            oOpts.unshift('-map', '[vout]', '-c:v', 'libx264', '-preset', 'fast');
-          } else {
-            oOpts.unshift('-map', '0:v', '-c:v', 'copy');
-          }
-          
-          if (previewMode) {
-            oOpts.push('-t', '15');
-          }
-
-          ffmpeg(videoPath)
-            .input(masterPcmPath)
-            .inputOptions([
-              '-f', 's16le',
-              '-ar', '24000',
-              '-ac', '1'
-            ])
-            .complexFilter(cFilter)
-            .outputOptions(oOpts)
-            .on('end', res)
-            .on('error', rej)
-            .save(outVideoPath);
-        });
-        
-        // Cleanup master PCM
-        if (fs.existsSync(masterPcmPath)) fs.unlinkSync(masterPcmPath);
-        
         const totalProcessTime = (Date.now() - processStartTime) / 1000;
-        log(`====== HOÀN TẤT (tổng thời gian: ${fmtTime(totalProcessTime)}) ======`);
-        log(`Video lồng tiếng đã lưu tại: ${outVideoPath}`);
-        resolve(outVideoPath);
+        log(`====== TẠO ÂM THANH HOÀN TẤT (tổng thời gian: ${fmtTime(totalProcessTime)}) ======`);
+        resolve(masterPcmPath);
       } catch (err: any) {
         log(`[LỖI] ${err.message}`);
         reject(err);
