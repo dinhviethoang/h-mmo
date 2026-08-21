@@ -17,6 +17,7 @@ export function Sidebar({ currentPath, onNavigate }: SidebarProps) {
     { id: 'douyin', icon: Link2, label: 'Douyin' },
     { id: 'subtitle', icon: PenTool, label: 'Tạo phụ đề' },
     { id: 'editor', icon: Video, label: 'Biên tập video' },
+    { id: 'autoshorts', icon: Video, label: 'Auto Shorts (AI)' },
   ];
 
   return (

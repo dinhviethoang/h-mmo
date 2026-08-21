@@ -4,6 +4,7 @@ import { EditorPage } from './pages/EditorPage';
 import { SubtitlePage } from './pages/SubtitlePage';
 import { DownloadPage } from './pages/DownloadPage';
 import DubbingPage from './pages/DubbingPage';
+import { AutoShortsPage } from './pages/AutoShortsPage';
 
 function App() {
   const [currentPath, setCurrentPath] = useState('editor');
@@ -20,6 +21,8 @@ function App() {
         return <SubtitlePage />;
       case 'dubbing':
         return <DubbingPage />;
+      case 'autoshorts':
+        return <AutoShortsPage />;
       default:
         return <EditorPage />;
     }
