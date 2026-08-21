@@ -119,7 +119,7 @@ export function setupVideoEngine(mainWindow: BrowserWindow) {
       let videoPad = '0:v';
       
       if (vFilters.length > 0) {
-        filterChain.push([0:v][vout]);
+        filterChain.push(`[0:v]${vFilters.join(',')}[vout]`);
         videoPad = '[vout]';
       }
 
