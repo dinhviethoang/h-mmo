@@ -253,7 +253,7 @@ export function EditorPage() {
                     controls 
                     onTimeUpdate={(e) => setCurrentTimeMs(e.currentTarget.currentTime * 1000)}
                   />
-                  {parsedSubtitles.map(sub => {
+                  {enableSubtitles && parsedSubtitles.map(sub => {
                     const isActive = currentTimeMs >= sub.startMs && currentTimeMs <= sub.endMs;
                     if (!isActive) return null;
                     return (
@@ -307,7 +307,7 @@ export function EditorPage() {
                     );
                   })}
                   
-                  {activeTab === 'blur' && blurRegions.map(region => (
+                  {enableBlur && activeTab === 'blur' && blurRegions.map(region => (
                     <div key={`overlay-${region.id}`} style={{
                       position: 'absolute',
                       left: `${region.x}%`,
@@ -507,23 +507,19 @@ export function EditorPage() {
                 <div className="section-header-flex">
                   <div>
                     <h3 className="section-title">Vùng làm mờ</h3>
-                    <p className="section-desc">Kéo và thay đổi kích thước vùng mờ trên bản xem trước.</p>
+                    <p className="section-desc">Áp dụng làm mờ vào video xuất.</p>
                   </div>
                   <button 
-                    className="btn-outline-dark" 
-                    style={{ width: 'auto' }}
-                    onClick={() => {
-                      const newId = `region-${Date.now()}`;
-                      setBlurRegions([...blurRegions, { id: newId, x: 20, y: 20, w: 20, h: 20, intensity: 10 }]);
-                    }}
+                    className={`btn-toggle ${enableBlur ? 'on' : ''}`} 
+                    onClick={() => setEnableBlur(!enableBlur)}
                   >
-                    + Thêm vùng
+                    {enableBlur ? 'Bật' : 'Tắt'}
                   </button>
                 </div>
 
                 <div style={{ opacity: enableBlur ? 1 : 0.5, pointerEvents: enableBlur ? 'auto' : 'none' }}>
                   <div className="section-header-flex mt-3 mb-2">
-                    <p className="section-desc mb-0">K�o v� thay d?i k�ch thu?c v�ng m?.</p>
+                    <p className="section-desc mb-0">Kéo và thay đổi kích thước vùng mờ.</p>
                     <button 
                       className="btn-outline-dark" 
                       style={{ width: 'auto' }}
@@ -532,9 +528,10 @@ export function EditorPage() {
                         setBlurRegions([...blurRegions, { id: newId, x: 20, y: 20, w: 20, h: 20, intensity: 10 }]);
                       }}
                     >
-                      + Th�m v�ng
+                      + Thêm vùng
                     </button>
                   </div>
+  
                   <div className="blur-regions-list mt-3">
                   {blurRegions.length === 0 && (
                     <p className="helper-text">Chưa có vùng làm mờ nào. Nhấn "+ Thêm vùng" để bắt đầu.</p>
