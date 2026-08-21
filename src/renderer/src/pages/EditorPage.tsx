@@ -22,6 +22,7 @@ export function EditorPage() {
   const [flipVideo, setFlipVideo] = useState(false);
   const [currentTimeMs, setCurrentTimeMs] = useState(0);
   const [enableSubtitles, setEnableSubtitles] = useState(true);
+  const [enableBlur, setEnableBlur] = useState(true);
 
   // Blur Settings State
   const [blurRegions, setBlurRegions] = useState<any[]>([{ id: 'region-1', x: 10, y: 10, w: 20, h: 20, intensity: 10 }]);
@@ -164,7 +165,7 @@ export function EditorPage() {
         videoPath,
         dubbedAudioPath,
         srtPath,
-        blurRegions,
+        blurRegions: enableBlur ? blurRegions : [],
         subStyle,
         fontSize,
         textColor,
