@@ -521,7 +521,21 @@ export function EditorPage() {
                   </button>
                 </div>
 
-                <div className="blur-regions-list mt-3">
+                <div style={{ opacity: enableBlur ? 1 : 0.5, pointerEvents: enableBlur ? 'auto' : 'none' }}>
+                  <div className="section-header-flex mt-3 mb-2">
+                    <p className="section-desc mb-0">K�o v� thay d?i k�ch thu?c v�ng m?.</p>
+                    <button 
+                      className="btn-outline-dark" 
+                      style={{ width: 'auto' }}
+                      onClick={() => {
+                        const newId = `region-${Date.now()}`;
+                        setBlurRegions([...blurRegions, { id: newId, x: 20, y: 20, w: 20, h: 20, intensity: 10 }]);
+                      }}
+                    >
+                      + Th�m v�ng
+                    </button>
+                  </div>
+                  <div className="blur-regions-list mt-3">
                   {blurRegions.length === 0 && (
                     <p className="helper-text">Chưa có vùng làm mờ nào. Nhấn "+ Thêm vùng" để bắt đầu.</p>
                   )}
@@ -580,6 +594,7 @@ export function EditorPage() {
                     </div>
                   ))}
                 </div>
+                </div>
               </div>
             )}
 
@@ -590,15 +605,19 @@ export function EditorPage() {
 
                 <div className="pane-divider"></div>
                 
-                <div style={{marginBottom: '15px'}}>
-                  <label className="checkbox-label">
-                    <input type="checkbox" checked={enableDubbing} onChange={(e) => setEnableDubbing(e.target.checked)} />
-                    <span className="checkbox-custom"></span>
-                    <span style={{fontWeight: 'bold', color: 'var(--color-primary)'}}>Áp dụng lồng tiếng (AI Dubbing)</span>
-                  </label>
+                <div className="section-header-flex">
+                  <div>
+                    <h3 className="section-title">L?ng ti?ng (AI)</h3>
+                    <p className="section-desc">�p d?ng l?ng ti?ng v�o video xu?t.</p>
+                  </div>
+                  <button 
+                    className={`btn-toggle ${enableDubbing ? 'on' : ''}`} 
+                    onClick={() => setEnableDubbing(!enableDubbing)}
+                  >
+                    {enableDubbing ? 'B?t' : 'T?t'}
+                  </button>
                 </div>
-
-                <div style={{opacity: enableDubbing ? 1 : 0.5, pointerEvents: enableDubbing ? 'auto' : 'none'}}>
+                <div style={{opacity: enableDubbing ? 1 : 0.5, pointerEvents: enableDubbing ? 'auto' : 'none', marginTop: '15px'}}>
                   <h3 className="pane-title small">Chọn Giọng Đọc</h3>
                 <select className="form-select mb-2" value={voiceId} onChange={e => setVoiceId(e.target.value)}>
                   <optgroup label="Danh sách giọng đã Clone">
