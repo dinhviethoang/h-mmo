@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import './EditorPage.css'; // Reuse styles
 
 export function AutoShortsPage() {
   const [activeTask, setActiveTask] = useState(1);
+  const [apiKey, setApiKey] = useState<string>(() => localStorage.getItem('geminiApiKey') || '');
+  useEffect(() => { localStorage.setItem('geminiApiKey', apiKey); }, [apiKey]);
 
   return (
     <div className="editor-container">
@@ -29,7 +31,7 @@ export function AutoShortsPage() {
             <h3 className="section-title">S?n xu?t Video T? �?ng (Google Veo 3)</h3>
             <p>H? th?ng s? l?y d? li?u t? Tab 1, t? d?ng g?i Veo 3 v? h�nh n?n, t? d?ng l?ng ti?ng, v� render ra video 9:16 ho�n ch?nh.</p>
             <label className="input-label mt-2">Google Veo 3 API Key</label>
-            <input type="text" className="form-control mb-3" placeholder="Nh?p API Key c?a b?n..." />
+            <input type="password" className="form-control mb-3" placeholder="Nh?p API Key c?a b?n..." value={apiKey} onChange={(e) => setApiKey(e.target.value)} />
             <button className="btn-export-large mt-3" style={{ width: '300px' }}>B?t �?u Render H�ng Lo?t</button>
           </div>
         )}

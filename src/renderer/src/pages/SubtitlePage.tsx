@@ -5,7 +5,8 @@ import './SubtitlePage.css';
 export function SubtitlePage() {
   const [videoPath, setVideoPath] = useState<string | null>(null);
   const [outputDir, setOutputDir] = useState<string>('C:\\Users\\ITHN\\Downloads');
-  const [apiKey, setApiKey] = useState<string>('');
+  const [apiKey, setApiKey] = useState<string>(() => localStorage.getItem('geminiApiKey') || '');
+  useEffect(() => { localStorage.setItem('geminiApiKey', apiKey); }, [apiKey]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
   const logEndRef = useRef<HTMLDivElement>(null);
