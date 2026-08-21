@@ -21,6 +21,7 @@ export function EditorPage() {
   const [addBg, setAddBg] = useState(false);
   const [flipVideo, setFlipVideo] = useState(false);
   const [currentTimeMs, setCurrentTimeMs] = useState(0);
+  const [enableSubtitles, setEnableSubtitles] = useState(true);
 
   // Blur Settings State
   const [blurRegions, setBlurRegions] = useState<any[]>([{ id: 'region-1', x: 10, y: 10, w: 20, h: 20, intensity: 10 }]);
@@ -171,6 +172,7 @@ export function EditorPage() {
         addBg,
         fontFamily,
         flipVideo,
+        applySubtitles: enableSubtitles,
         previewMode: isPreview
       });
       
@@ -375,10 +377,16 @@ export function EditorPage() {
                     <h3 className="section-title">Kiểu phụ đề</h3>
                     <p className="section-desc">Áp dụng đồng thời cho xem trước và video xuất.</p>
                   </div>
-                  <button className="btn-toggle on">Bật</button>
+                  <button 
+                    className={`btn-toggle ${enableSubtitles ? 'on' : ''}`} 
+                    onClick={() => setEnableSubtitles(!enableSubtitles)}
+                  >
+                    {enableSubtitles ? 'Bật' : 'Tắt'}
+                  </button>
                 </div>
 
-                <div className="radio-card-group">
+                <div style={{ opacity: enableSubtitles ? 1 : 0.5, pointerEvents: enableSubtitles ? 'auto' : 'none' }}>
+                  <div className="radio-card-group">
                   <label className={`radio-card ${subStyle === 'sentence' ? 'active' : ''}`}>
                     <input type="radio" name="subStyle" value="sentence" checked={subStyle === 'sentence'} onChange={() => setSubStyle('sentence')} />
                     <span className="radio-icon"></span>
@@ -488,6 +496,7 @@ export function EditorPage() {
                   <span className="checkbox-custom"></span>
                   <span>Thêm nền sau chữ</span>
                 </label>
+                </div>
               </div>
             )}
 

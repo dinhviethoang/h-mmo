@@ -52,7 +52,7 @@ export function setupVideoEngine(mainWindow: BrowserWindow) {
   // Export Video Process
   ipcMain.handle('video:process', async (_event, options) => {
     return new Promise((resolve, reject) => {
-      const { videoPath, srtPath, blurRegions, subStyle, fontSize = 32, textColor = '#ffffff', borderColor = '#000000', borderWidth = 2, addBg = false, fontFamily = 'Arial', flipVideo = false, previewMode = false } = options
+      const { videoPath, srtPath, blurRegions, subStyle, fontSize = 32, textColor = '#ffffff', borderColor = '#000000', borderWidth = 2, addBg = false, fontFamily = 'Arial', flipVideo = false, applySubtitles = true, previewMode = false } = options
       
       const parsedPath = path.parse(videoPath)
       const outPath = previewMode 
@@ -93,7 +93,7 @@ export function setupVideoEngine(mainWindow: BrowserWindow) {
       }
 
       // 2. Hardsub Logic
-      if (srtPath && fs.existsSync(srtPath)) {
+      if (applySubtitles && srtPath && fs.existsSync(srtPath)) {
         // Normalize path for FFmpeg filter
         const srtClean = srtPath.replace(/\\/g, '/').replace(/:/g, '\\:')
         
@@ -121,9 +121,11 @@ export function setupVideoEngine(mainWindow: BrowserWindow) {
 
 
       command.output(outPath)
+        .outputOptions('-y')
         .on('start', (cmdline) => {
           console.log('Spawned Ffmpeg with command: ' + cmdline)
-          mainWindow.webContents.send('video:log', 'Đang bắt đầu tiến trình xuất video...')
+          mainWindow.webContents.send('video:log', 'Bắt đầu tiến trình xuất video...')
+          mainWindow.webContents.send('video:log', `[CMD]: ${cmdline}`)
         })
         .on('progress', (progress) => {
           if (progress.percent) {
