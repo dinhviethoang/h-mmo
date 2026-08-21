@@ -99,7 +99,7 @@ export function setupDubbingEngine(mainWindow: BrowserWindow) {
         // --- PARALLEL TTS: Use all CPU cores ---
         const os = require('os');
         const { spawn } = require('child_process');
-        const CONCURRENCY = Math.min(os.cpus().length, 8); // Cap at 8 to avoid overloading
+        const CONCURRENCY = Math.min(os.cpus().length, 4); // Cap at 4 to avoid OOM crashes
         log(`Bắt đầu tạo giọng nói (TTS) - ${CONCURRENCY} luồng song song (${os.cpus().length} CPU cores)...`);
         
         // Pre-resolve NeeyuVoice paths once
@@ -126,35 +126,51 @@ export function setupDubbingEngine(mainWindow: BrowserWindow) {
           
           const tempMp3 = path.join(tempDir, `cue_${i}.mp3`);
           const tempPcm = path.join(tempDir, `cue_${i}.pcm`);
-          
-          // TTS Generation
-          await new Promise<void>((resolve, reject) => {
-            const proc = spawn(engineExe, [
-              '--voices-dir', voicesDir,
-              '--models-dir', modelsDir,
-              'generate',
-              '--text', cue.text,
-              '--voice', voiceName,
-              '--out', tempMp3,
-              '--no-watermark'
-            ]);
-            
-            proc.stdout.on('data', (data: Buffer) => {
-              const lines = data.toString().split('\n');
-              for (const line of lines) {
-                if (!line.trim()) continue;
-                try {
-                  const parsed = JSON.parse(line);
-                  if (parsed.type === 'error') reject(new Error(parsed.message));
-                } catch (e) { /* Ignore non-json logs */ }
+          // TTS Generation with auto-retry
+          let success = false;
+          let retries = 0;
+          const MAX_RETRIES = 3;
+
+          while (!success && retries < MAX_RETRIES) {
+            try {
+              if (retries > 0) log(`[${i+1}/${cues.length}] ⚠ Lỗi, đang thử lại lần ${retries}/${MAX_RETRIES}...`);
+              await new Promise<void>((resolve, reject) => {
+                const proc = spawn(engineExe, [
+                  '--voices-dir', voicesDir,
+                  '--models-dir', modelsDir,
+                  'generate',
+                  '--text', cue.text,
+                  '--voice', voiceName,
+                  '--out', tempMp3,
+                  '--no-watermark'
+                ]);
+                
+                proc.stdout.on('data', (data: Buffer) => {
+                  const lines = data.toString().split('\n');
+                  for (const line of lines) {
+                    if (!line.trim()) continue;
+                    try {
+                      const parsed = JSON.parse(line);
+                      if (parsed.type === 'error') reject(new Error(parsed.message));
+                    } catch (e) { /* Ignore non-json logs */ }
+                  }
+                });
+                
+                proc.on('close', (code: number) => {
+                  if (code === 0) resolve();
+                  else reject(new Error(`NeeyuVoice process exited with code ${code}`));
+                });
+              });
+              success = true;
+            } catch (err: any) {
+              retries++;
+              if (retries >= MAX_RETRIES) {
+                throw new Error(`Câu [${i+1}] thất bại sau ${MAX_RETRIES} lần thử: ${err.message}`);
               }
-            });
-            
-            proc.on('close', (code: number) => {
-              if (code === 0) resolve();
-              else reject(new Error(`NeeyuVoice process exited with code ${code}`));
-            });
-          });
+              // Wait 1 second before retrying
+              await new Promise(r => setTimeout(r, 1000));
+            }
+          }
           
           // Convert MP3 to PCM
           await mp3ToPcm(tempMp3, tempPcm);
