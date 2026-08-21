@@ -604,14 +604,14 @@ export function EditorPage() {
                 
                 <div className="section-header-flex">
                   <div>
-                    <h3 className="section-title">L?ng ti?ng (AI)</h3>
-                    <p className="section-desc">�p d?ng l?ng ti?ng v�o video xu?t.</p>
+                    <h3 className="section-title">Lồng tiếng (AI)</h3>
+                    <p className="section-desc">Áp dụng lồng tiếng vào video xuất.</p>
                   </div>
                   <button 
                     className={`btn-toggle ${enableDubbing ? 'on' : ''}`} 
                     onClick={() => setEnableDubbing(!enableDubbing)}
                   >
-                    {enableDubbing ? 'B?t' : 'T?t'}
+                    {enableDubbing ? 'Bật' : 'Tắt'}
                   </button>
                 </div>
                 <div style={{opacity: enableDubbing ? 1 : 0.5, pointerEvents: enableDubbing ? 'auto' : 'none', marginTop: '15px'}}>
