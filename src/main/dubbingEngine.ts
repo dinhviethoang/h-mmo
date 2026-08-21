@@ -131,6 +131,16 @@ export function setupDubbingEngine(mainWindow: BrowserWindow) {
           let retries = 0;
           const MAX_RETRIES = 3;
 
+          const threadsPerProc = Math.max(1, Math.floor(os.cpus().length / CONCURRENCY)).toString();
+          const procEnv = { 
+            ...process.env, 
+            OMP_NUM_THREADS: threadsPerProc,
+            MKL_NUM_THREADS: threadsPerProc,
+            OPENBLAS_NUM_THREADS: threadsPerProc,
+            NUMEXPR_NUM_THREADS: threadsPerProc,
+            VECLIB_MAXIMUM_THREADS: threadsPerProc
+          };
+
           while (!success && retries < MAX_RETRIES) {
             try {
               if (retries > 0) log(`[${i+1}/${cues.length}] ⚠ Lỗi, đang thử lại lần ${retries}/${MAX_RETRIES}...`);
@@ -143,7 +153,7 @@ export function setupDubbingEngine(mainWindow: BrowserWindow) {
                   '--voice', voiceName,
                   '--out', tempMp3,
                   '--no-watermark'
-                ]);
+                ], { env: procEnv });
                 
                 proc.stdout.on('data', (data: Buffer) => {
                   const lines = data.toString().split('\n');
