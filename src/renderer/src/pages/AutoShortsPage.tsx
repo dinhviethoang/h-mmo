@@ -4,7 +4,7 @@ import './AutoShortsPage.css';
 export function AutoShortsPage() {
   const [activeTab, setActiveTab] = useState(1);
   const [inputType, setInputType] = useState('manual');
-  const [inputText, setInputText] = useState("H�m nay t�i s? hu?ng d?n c�c b?n c�ch l�m video t? d?ng.\nCh? v?i v�i thao t�c co b?n, AI s? lo to�n b? ph?n h�nh ?nh.\nH�y dang k� k�nh d? xem th�m nhi?u c�ng c? hay nh�!");
+  const [inputText, setInputText] = useState("Hôm nay tôi sẽ hướng dẫn các bạn cách làm video tự động.\nChỉ với vài thao tác cơ bản, AI sẽ lo toàn bộ phần hình ảnh.\nHãy đăng ký kênh để xem thêm nhiều công cụ hay nhé!");
   const [scenes, setScenes] = useState<string[]>([]);
   
   const [apiKey, setApiKey] = useState<string>(() => localStorage.getItem('geminiApiKey') || '');
@@ -47,22 +47,22 @@ export function AutoShortsPage() {
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      alert(`�� ch?n file: ${file.name}\nT�nh nang d?c Excel dang du?c ph�t tri?n!`);
+      alert(`Đã chọn file: ${file.name}\nTính năng đọc Excel đang được phát triển!`);
       setScenes([
-        `N?i dung t? file ${file.name} - D�ng 1`,
-        `N?i dung t? file ${file.name} - D�ng 2`,
-        `N?i dung t? file ${file.name} - D�ng 3`
+        `Nội dung từ file ${file.name} - Dòng 1`,
+        `Nội dung từ file ${file.name} - Dòng 2`,
+        `Nội dung từ file ${file.name} - Dòng 3`
       ]);
     }
   };
 
   const handleStartRender = async () => {
     if (!apiKey) {
-      alert('Vui l�ng nh?p API Key c?a Google Veo 3!');
+      alert('Vui lòng nhập API Key của Google Veo 3!');
       return;
     }
     if (scenes.length === 0) {
-      alert('Kh�ng c� c?nh n�o d? render!');
+      alert('Không có cảnh nào để render!');
       return;
     }
 
@@ -71,7 +71,7 @@ export function AutoShortsPage() {
     try {
       await window.api.generateAutoShorts({ apiKey, scenes });
     } catch (error: any) {
-      setLogs(prev => [...prev, `L?I H? TH?NG: ${error.message}`]);
+      setLogs(prev => [...prev, `LỖI HỆ THỐNG: ${error.message}`]);
     } finally {
       setIsProcessing(false);
     }
@@ -84,12 +84,12 @@ export function AutoShortsPage() {
       <div className="as-stepper-box">
         <div className={`as-step ${activeTab >= 1 ? 'active' : ''}`}>
           <div className="as-step-circle">#1</div>
-          <div className="as-step-label">Nh?p & Qu?n l� k?ch b?n</div>
+          <div className="as-step-label">Nhập & Quản lý kịch bản</div>
         </div>
         <div className="as-step-line" style={{ background: activeTab >= 2 ? '#ff6600' : 'linear-gradient(90deg, #ff6600 50%, #4a4d5e 50%)' }}></div>
         <div className={`as-step ${activeTab >= 2 ? 'active' : ''}`}>
           <div className="as-step-circle">#2</div>
-          <div className="as-step-label">C?u h�nh & S?n xu?t Video</div>
+          <div className="as-step-label">Cấu hình & Sản xuất Video</div>
         </div>
       </div>
 
@@ -98,7 +98,7 @@ export function AutoShortsPage() {
           <div className="as-content-area">
             <div className="as-panel">
               <div className="as-panel-header">
-                <h3 className="as-panel-title">Ngu?n D? Li?u</h3>
+                <h3 className="as-panel-title">Nguồn Dữ Liệu</h3>
                 <div className="as-toggle-group">
                   <button 
                     className={`as-toggle-btn ${inputType === 'manual' ? 'active' : ''}`}
@@ -108,13 +108,13 @@ export function AutoShortsPage() {
                       setScenes(splitText);
                     }}
                   >
-                    Nh?p th? c�ng
+                    Nhập thủ công
                   </button>
                   <button 
                     className={`as-toggle-btn ${inputType === 'excel' ? 'active' : ''}`}
                     onClick={() => setInputType('excel')}
                   >
-                    T?i file Excel
+                    Tải file Excel
                   </button>
                 </div>
               </div>
@@ -124,7 +124,7 @@ export function AutoShortsPage() {
                   className="as-textarea" 
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
-                  placeholder="Nh?p k?ch b?n v�o d�y..."
+                  placeholder="Nhập kịch bản vào đây..."
                 />
               ) : (
                 <div className="as-upload-box" style={{ 
@@ -138,7 +138,7 @@ export function AutoShortsPage() {
                   backgroundColor: '#16171e',
                   cursor: 'pointer'
                 }}>
-                  <p style={{ color: '#8b8e9d', marginBottom: '15px' }}>K�o th? file .xlsx / .csv v�o d�y</p>
+                  <p style={{ color: '#8b8e9d', marginBottom: '15px' }}>Kéo thả file .xlsx / .csv vào đây</p>
                   <label style={{ 
                     backgroundColor: '#ff6600', 
                     color: '#fff', 
@@ -147,7 +147,7 @@ export function AutoShortsPage() {
                     cursor: 'pointer',
                     fontWeight: 500
                   }}>
-                    Ch?n File
+                    Chọn File
                     <input type="file" accept=".xlsx, .xls, .csv" style={{ display: 'none' }} onChange={handleFileUpload} />
                   </label>
                 </div>
@@ -157,15 +157,15 @@ export function AutoShortsPage() {
             <div className="as-panel">
               <div className="as-panel-header">
                 <div>
-                  <h3 className="as-panel-title">B?n xem tru?c (�� t�ch c�u)</h3>
-                  <div className="as-panel-subtitle">{scenes.length} c?nh du?c t�m th?y</div>
+                  <h3 className="as-panel-title">Bản xem trước (Đã tách câu)</h3>
+                  <div className="as-panel-subtitle">{scenes.length} cảnh được tìm thấy</div>
                 </div>
               </div>
               
               <div className="as-scene-list">
                 {scenes.map((scene, index) => (
                   <div key={index} className={`as-scene-card ${index < 2 ? 'active' : ''}`}>
-                    <div className="as-scene-header"># C?nh {index + 1}</div>
+                    <div className="as-scene-header"># Cảnh {index + 1}</div>
                     <div className="as-scene-text">{scene}</div>
                   </div>
                 ))}
@@ -175,7 +175,7 @@ export function AutoShortsPage() {
 
           <div className="as-footer">
             <button className="btn-continue" onClick={() => setActiveTab(2)}>
-              Luu k?ch b?n & Ti?p t?c ?
+              Lưu kịch bản & Tiếp tục →
             </button>
           </div>
         </>
@@ -184,15 +184,15 @@ export function AutoShortsPage() {
       {activeTab === 2 && (
         <div className="as-content-area">
            <div className="as-panel" style={{ alignItems: 'center', justifyContent: 'center' }}>
-             <h3 className="as-panel-title" style={{ fontSize: '24px', marginBottom: '10px' }}>S?n xu?t Video v?i Google Veo 3</h3>
-             <p style={{ color: '#8b8e9d', marginBottom: '20px' }}>H? th?ng s? l?y {scenes.length} c?nh t? Bu?c 1, g?i AI sinh video v� t? �p ph? d?.</p>
+             <h3 className="as-panel-title" style={{ fontSize: '24px', marginBottom: '10px' }}>Sản xuất Video với Google Veo 3</h3>
+             <p style={{ color: '#8b8e9d', marginBottom: '20px' }}>Hệ thống sẽ lấy {scenes.length} cảnh từ Bước 1, gọi AI sinh video và tự ép phụ đề.</p>
              
              <div style={{ width: '100%', maxWidth: '600px', marginBottom: '20px' }}>
-               <label className="input-label">Google API Key</label>
+               <label className="input-label" style={{ color: '#8b8e9d' }}>Google API Key</label>
                <input 
                  type="password" 
                  className="form-control" 
-                 placeholder="Nh?p API Key c?a b?n..." 
+                 placeholder="Nhập API Key của bạn..." 
                  value={apiKey} 
                  onChange={(e) => setApiKey(e.target.value)} 
                  disabled={isProcessing}
@@ -201,10 +201,10 @@ export function AutoShortsPage() {
 
              <div style={{ display: 'flex', gap: '15px', marginBottom: '30px' }}>
                <button className="btn-continue" style={{ padding: '12px 30px', borderColor: '#4a4d5e', color: '#fff' }} onClick={() => setActiveTab(1)} disabled={isProcessing}>
-                ? Quay l?i
+                ← Quay lại
                </button>
-               <button className="btn-continue" style={{ padding: '12px 30px', backgroundColor: '#ff6600', color: '#fff' }} onClick={handleStartRender} disabled={isProcessing}>
-                {isProcessing ? '�ang X? L�...' : 'B?t �?u Render'}
+               <button className="btn-continue" style={{ padding: '12px 30px', backgroundColor: '#ff6600', color: '#fff', border: 'none' }} onClick={handleStartRender} disabled={isProcessing}>
+                {isProcessing ? 'Đang Xử Lý...' : 'Bắt Đầu Render'}
                </button>
              </div>
 
@@ -223,7 +223,7 @@ export function AutoShortsPage() {
                border: '1px solid #2a2c38'
              }}>
                 {logs.length === 0 ? (
-                  <span style={{ color: '#8b8e9d' }}>[Terminal] �ang ch? l?nh...</span>
+                  <span style={{ color: '#8b8e9d' }}>[Terminal] Đang chờ lệnh...</span>
                 ) : (
                   logs.map((l, i) => <div key={i}>{l}</div>)
                 )}
