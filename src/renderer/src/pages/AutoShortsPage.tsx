@@ -1,18 +1,24 @@
 import { useState, useEffect, useRef } from 'react';
 import './AutoShortsPage.css';
+import Papa from 'papaparse';
+
+export interface Scene {
+  content: string;
+  prompt: string;
+  voiceover: string;
+}
 
 export function AutoShortsPage() {
   const [activeTab, setActiveTab] = useState(1);
   const [inputType, setInputType] = useState('manual');
-  const [inputText, setInputText] = useState("Hôm nay tôi sẽ hướng dẫn các bạn cách làm video tự động.\nChỉ với vài thao tác cơ bản, AI sẽ lo toàn bộ phần hình ảnh.\nHãy đăng ký kênh để xem thêm nhiều công cụ hay nhé!");
-  const [scenes, setScenes] = useState<string[]>([]);
-  
-  const [apiKey, setApiKey] = useState<string>(() => localStorage.getItem('geminiApiKey') || '');
+  const [inputText, setInputText] = useState('Xin chào.\nHôm nay là một ngày tuyệt vời.');
+  const [gsheetUrl, setGsheetUrl] = useState('');
+  const [scenes, setScenes] = useState<Scene[]>([]);
+  const [apiKey, setApiKey] = useState('AIzaSyC-Fake-Key-For-Veo-3');
   const [isProcessing, setIsProcessing] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
+  
   const logEndRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => { localStorage.setItem('geminiApiKey', apiKey); }, [apiKey]);
 
   useEffect(() => {
     if (logEndRef.current) {
@@ -21,38 +27,55 @@ export function AutoShortsPage() {
   }, [logs]);
 
   useEffect(() => {
-    // Listen for backend logs
     window.api.autoshortsLogs((logMsg: string) => {
       setLogs((prev) => [...prev, logMsg]);
     });
-    return () => {
-      // Cleanup if needed
-    };
+    return () => {};
   }, []);
 
   useEffect(() => {
-    if (!inputText && inputType === 'manual') {
-      setScenes([]);
-      return;
-    }
     if (inputType === 'manual') {
       const splitText = inputText
         .split(/\n+|\.\s+/)
         .map(s => s.trim())
         .filter(s => s.length > 0);
-      setScenes(splitText);
+      setScenes(splitText.map(t => ({ content: t, prompt: t, voiceover: t })));
     }
   }, [inputText, inputType]);
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      alert(`Đã chọn file: ${file.name}\nTính năng đọc Excel đang được phát triển!`);
-      setScenes([
-        `Nội dung từ file ${file.name} - Dòng 1`,
-        `Nội dung từ file ${file.name} - Dòng 2`,
-        `Nội dung từ file ${file.name} - Dòng 3`
-      ]);
+  const handleFetchGsheet = async () => {
+    if (!gsheetUrl.includes('docs.google.com/spreadsheets')) {
+      alert('Vui lòng nhập link Google Sheets hợp lệ!');
+      return;
+    }
+    try {
+      const csvUrl = gsheetUrl.replace(/\/edit.*$/, '/export?format=csv');
+      const response = await fetch(csvUrl);
+      const csvText = await response.text();
+      
+      Papa.parse(csvText, {
+        header: false,
+        skipEmptyLines: true,
+        complete: (results) => {
+          const rows = results.data as string[][];
+          // Skip header row if it exists
+          const dataRows = rows.length > 1 && rows[0][0].toLowerCase().includes('nội dung') ? rows.slice(1) : rows;
+          
+          const newScenes: Scene[] = dataRows.map(row => ({
+            content: row[0] || '',
+            prompt: row[1] || row[0] || '',
+            voiceover: row[2] || row[0] || ''
+          })).filter(s => s.content.length > 0);
+          
+          setScenes(newScenes);
+          alert(`Đã tải thành công ${newScenes.length} cảnh từ Google Sheets!`);
+        },
+        error: (err: any) => {
+          alert('Lỗi parse CSV: ' + err.message);
+        }
+      });
+    } catch (error: any) {
+      alert('Lỗi tải Google Sheets. Vui lòng đảm bảo Sheet đã được Share (Anyone with the link can view): ' + error.message);
     }
   };
 
@@ -104,17 +127,15 @@ export function AutoShortsPage() {
                     className={`as-toggle-btn ${inputType === 'manual' ? 'active' : ''}`}
                     onClick={() => {
                       setInputType('manual');
-                      const splitText = inputText.split(/\n+|\.\s+/).map(s => s.trim()).filter(s => s.length > 0);
-                      setScenes(splitText);
                     }}
                   >
                     Nhập thủ công
                   </button>
                   <button 
-                    className={`as-toggle-btn ${inputType === 'excel' ? 'active' : ''}`}
-                    onClick={() => setInputType('excel')}
+                    className={`as-toggle-btn ${inputType === 'gsheet' ? 'active' : ''}`}
+                    onClick={() => setInputType('gsheet')}
                   >
-                    Tải file Excel
+                    Google Sheets
                   </button>
                 </div>
               </div>
@@ -136,20 +157,32 @@ export function AutoShortsPage() {
                   alignItems: 'center', 
                   justifyContent: 'center',
                   backgroundColor: '#16171e',
-                  cursor: 'pointer'
+                  padding: '20px'
                 }}>
-                  <p style={{ color: '#8b8e9d', marginBottom: '15px' }}>Kéo thả file .xlsx / .csv vào đây</p>
-                  <label style={{ 
+                  <p style={{ color: '#8b8e9d', marginBottom: '15px', textAlign: 'center' }}>
+                    Dán link Google Sheets của bạn vào đây.<br/>(Yêu cầu Sheet có 3 cột: Nội dung, Prompt Hình ảnh, Kịch bản Lồng tiếng)
+                  </p>
+                  <input 
+                    type="text" 
+                    className="form-control" 
+                    style={{ width: '90%', marginBottom: '15px', backgroundColor: '#121319', border: '1px solid #2a2c38', color: '#fff', padding: '10px', borderRadius: '4px' }}
+                    placeholder="https://docs.google.com/spreadsheets/d/.../edit"
+                    value={gsheetUrl}
+                    onChange={(e) => setGsheetUrl(e.target.value)}
+                  />
+                  <button 
+                    onClick={handleFetchGsheet}
+                    style={{ 
                     backgroundColor: '#ff6600', 
                     color: '#fff', 
                     padding: '8px 20px', 
                     borderRadius: '4px', 
                     cursor: 'pointer',
-                    fontWeight: 500
+                    fontWeight: 500,
+                    border: 'none'
                   }}>
-                    Chọn File
-                    <input type="file" accept=".xlsx, .xls, .csv" style={{ display: 'none' }} onChange={handleFileUpload} />
-                  </label>
+                    Tải Dữ Liệu Từ Sheet
+                  </button>
                 </div>
               )}
             </div>
@@ -157,16 +190,17 @@ export function AutoShortsPage() {
             <div className="as-panel">
               <div className="as-panel-header">
                 <div>
-                  <h3 className="as-panel-title">Bản xem trước (Đã tách câu)</h3>
-                  <div className="as-panel-subtitle">{scenes.length} cảnh được tìm thấy</div>
+                  <h3 className="as-panel-title">Bản xem trước ({scenes.length} cảnh)</h3>
                 </div>
               </div>
               
               <div className="as-scene-list">
                 {scenes.map((scene, index) => (
-                  <div key={index} className={`as-scene-card ${index < 2 ? 'active' : ''}`}>
+                  <div key={index} className={`as-scene-card ${index < 2 ? 'active' : ''}`} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     <div className="as-scene-header"># Cảnh {index + 1}</div>
-                    <div className="as-scene-text">{scene}</div>
+                    <div style={{ color: '#fff', fontSize: '14px' }}><b>Gốc:</b> {scene.content}</div>
+                    <div style={{ color: '#00ffff', fontSize: '13px' }}><b>Prompt Veo3:</b> {scene.prompt}</div>
+                    <div style={{ color: '#ffcc00', fontSize: '13px' }}><b>Lời thoại:</b> {scene.voiceover}</div>
                   </div>
                 ))}
               </div>
@@ -185,7 +219,7 @@ export function AutoShortsPage() {
         <div className="as-content-area">
            <div className="as-panel" style={{ alignItems: 'center', justifyContent: 'center' }}>
              <h3 className="as-panel-title" style={{ fontSize: '24px', marginBottom: '10px' }}>Sản xuất Video với Google Veo 3</h3>
-             <p style={{ color: '#8b8e9d', marginBottom: '20px' }}>Hệ thống sẽ lấy {scenes.length} cảnh từ Bước 1, gọi AI sinh video và tự ép phụ đề.</p>
+             <p style={{ color: '#8b8e9d', marginBottom: '20px' }}>Hệ thống sẽ lấy {scenes.length} cảnh từ Bước 1, gọi AI sinh video (dựa trên Prompt) và tự ép phụ đề (dựa trên Lời thoại).</p>
              
              <div style={{ width: '100%', maxWidth: '600px', marginBottom: '20px' }}>
                <label className="input-label" style={{ color: '#8b8e9d' }}>Google API Key</label>

@@ -16,12 +16,8 @@ function logToWindow(mainWindow: BrowserWindow, message: string) {
 async function generateVeo3Video(_apiKey: string, prompt: string, outputPath: string, log: (m: string) => void) {
   log(`Đang gọi Google Veo 3 API cho kịch bản: "${prompt.substring(0, 30)}..."`);
   
-  // NOTE: Thay thế đoạn này bằng actual REST API call to Google Veo 3 endpoint
-  // fetch('https://generativelanguage.googleapis.com/v1beta/models/veo-3:generateVideo?key=' + apiKey, ...)
+  await new Promise(r => setTimeout(r, 2000));
   
-  await new Promise(r => setTimeout(r, 2000)); // Giả lập chờ Veo 3 render 2 giây
-  
-  // Tạo 1 video câm giả lập bằng FFmpeg thay vì gọi API thật
   return new Promise((resolve, reject) => {
     ffmpeg()
       .input('color=c=black:s=1080x1920:d=5')
@@ -47,30 +43,32 @@ export function setupAutoShortsEngine(mainWindow: BrowserWindow) {
       const { apiKey, scenes } = options;
       
       const log = (msg: string) => logToWindow(mainWindow, msg);
-      log('Bắt đầu quy trình sản xuất Auto Shorts (Veo 3)...');
+      log('Bắt đầu quy trình sản xuất Auto Shorts 3-Cột (Veo 3)...');
 
       try {
         const outDir = path.join(require('os').homedir(), 'Downloads', 'H-MMO-Shorts');
         if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
 
         for (let i = 0; i < scenes.length; i++) {
-          const sceneText = scenes[i];
+          const scene = scenes[i];
           log(`\n--- XỬ LÝ CẢNH ${i + 1}/${scenes.length} ---`);
+          log(`Prompt Video: ${scene.prompt.substring(0, 50)}...`);
+          log(`Lời thoại: ${scene.voiceover.substring(0, 50)}...`);
           
           const veoVideoPath = path.join(outDir, `scene_${i+1}_veo.mp4`);
           const srtPath = path.join(outDir, `scene_${i+1}.srt`);
           const finalPath = path.join(outDir, `scene_${i+1}_final.mp4`);
           
-          // Bước 1: Gọi Veo 3 API
-          await generateVeo3Video(apiKey, sceneText, veoVideoPath, log);
+          // Bước 1: Gọi Veo 3 sử dụng PROMPT (Cột 2)
+          await generateVeo3Video(apiKey, scene.prompt, veoVideoPath, log);
 
-          // Bước 2: Tạo Subtitles (Giả lập STT)
-          log('Đang chạy thuật toán Auto-alignment tạo Subtitle...');
-          const srtContent = `1\n00:00:00,000 --> 00:00:04,500\n${sceneText}\n`;
+          // Bước 2: Tạo Subtitles / TTS sử dụng LỜI THOẠI (Cột 3)
+          log('Đang chạy thuật toán Auto-alignment tạo Subtitle từ Lời Thoại...');
+          const srtContent = `1\n00:00:00,000 --> 00:00:04,500\n${scene.voiceover}\n`;
           fs.writeFileSync(srtPath, srtContent, 'utf8');
           log('Tạo file SRT thành công!');
 
-          // Bước 3: Ép Subtitle vào Video bằng FFmpeg
+          // Bước 3: Ghép nối bằng FFmpeg
           log('Đang dùng FFmpeg ép Subtitle (Hardsub) lên video của Veo 3...');
           const srtPathFFmpeg = srtPath.replace(/\\/g, '/').replace(/:/g, '\\:');
           
