@@ -19,6 +19,10 @@ const api = {
   getNeeyuVoices: () => ipcRenderer.invoke('get-neeyu-voices'),
   scanUrl: (url: string) => ipcRenderer.invoke('scan-url', url),
   downloadVideos: (urls: string[], savePath: string, cookie: string) => ipcRenderer.invoke('download-videos', urls, savePath, cookie),
+  generateAutoShorts: (options: any) => ipcRenderer.invoke('autoshorts:generate', options),
+  autoshortsLogs: (callback: (log: string) => void) => {
+    ipcRenderer.on('autoshorts:log', (_event, log) => callback(log))
+  },
   onDownloadProgress: (callback: (log: string) => void) => {
     ipcRenderer.removeAllListeners('download-progress');
     ipcRenderer.on('download-progress', (_event, log) => callback(log))

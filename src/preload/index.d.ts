@@ -16,6 +16,8 @@ declare global {
       getNeeyuVoices: () => Promise<any>
       scanUrl: (url: string) => Promise<any>
       downloadVideos: (urls: string[], savePath: string, cookie: string) => Promise<any>
+      generateAutoShorts: (options: any) => Promise<any>,
+      autoshortsLogs: (callback: (log: string) => void) => void,
       onDownloadProgress: (callback: (log: string) => void) => void
     }
   }
