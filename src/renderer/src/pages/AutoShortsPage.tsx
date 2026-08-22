@@ -1,41 +1,111 @@
 import { useState, useEffect } from 'react';
-import './EditorPage.css'; // Reuse styles
+import './AutoShortsPage.css';
 
 export function AutoShortsPage() {
-  const [activeTask, setActiveTask] = useState(1);
-  const [apiKey, setApiKey] = useState<string>(() => localStorage.getItem('geminiApiKey') || '');
-  useEffect(() => { localStorage.setItem('geminiApiKey', apiKey); }, [apiKey]);
+  const [activeTab, setActiveTab] = useState(1);
+  const [inputType, setInputType] = useState('manual');
+  const [inputText, setInputText] = useState("H�m nay t�i s? hu?ng d?n c�c b?n c�ch l�m video t? d?ng.\nCh? v?i v�i thao t�c co b?n, AI s? lo to�n b? ph?n h�nh ?nh.\nH�y dang k� k�nh d? xem th�m nhi?u c�ng c? hay nh�!");
+  const [scenes, setScenes] = useState<string[]>([]);
+
+  // Split text into scenes based on newlines or punctuation
+  useEffect(() => {
+    if (!inputText) {
+      setScenes([]);
+      return;
+    }
+    // Split by newline or period followed by space
+    const splitText = inputText
+      .split(/\n+|\.\s+/)
+      .map(s => s.trim())
+      .filter(s => s.length > 0);
+    setScenes(splitText);
+  }, [inputText]);
 
   return (
-    <div className="editor-container">
-      <div className="editor-header">
-        <h2>Auto Shorts (Veo 3 AI)</h2>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button className={`btn-outline-dark ${activeTask === 1 ? 'active' : ''}`} onClick={() => setActiveTask(1)}>Tab 1: Quản lý Nội Dung</button>
-          <button className={`btn-outline-dark ${activeTask === 2 ? 'active' : ''}`} onClick={() => setActiveTask(2)}>Tab 2: Render Video Tự Động</button>
+    <div className="autoshorts-page">
+      <div className="as-header">Auto Shorts (Veo 3 AI)</div>
+      
+      <div className="as-stepper-box">
+        <div className={`as-step ${activeTab >= 1 ? 'active' : ''}`}>
+          <div className="as-step-circle">#1</div>
+          <div className="as-step-label">Nh?p & Qu?n l� k?ch b?n</div>
+        </div>
+        <div className="as-step-line" style={{ background: activeTab >= 2 ? '#ff6600' : 'linear-gradient(90deg, #ff6600 50%, #4a4d5e 50%)' }}></div>
+        <div className={`as-step ${activeTab >= 2 ? 'active' : ''}`}>
+          <div className="as-step-circle">#2</div>
+          <div className="as-step-label">C?u h�nh & S?n xu?t Video</div>
         </div>
       </div>
 
-      <div className="main-content" style={{ padding: '20px', color: '#fff' }}>
-        {activeTask === 1 && (
-          <div className="panel">
-            <h3 className="section-title">Quản lý nội dung (Kịch bản)</h3>
-            <p>Nhập kịch bản hoặc Upload file Excel chứa danh sách các câu nói hay để chuẩn bị làm video.</p>
-            <textarea className="form-control" rows={10} placeholder="Nhập trích dẫn sách vào đây..."></textarea>
-            <button className="btn-export-large mt-3" style={{ width: '200px' }}>Lưu Kịch Bản</button>
-          </div>
-        )}
+      {activeTab === 1 && (
+        <>
+          <div className="as-content-area">
+            {/* Left Panel */}
+            <div className="as-panel">
+              <div className="as-panel-header">
+                <h3 className="as-panel-title">Ngu?n D? Li?u</h3>
+                <div className="as-toggle-group">
+                  <button 
+                    className={`as-toggle-btn ${inputType === 'manual' ? 'active' : ''}`}
+                    onClick={() => setInputType('manual')}
+                  >
+                    Nh?p th? c�ng
+                  </button>
+                  <button 
+                    className={`as-toggle-btn ${inputType === 'excel' ? 'active' : ''}`}
+                    onClick={() => setInputType('excel')}
+                  >
+                    T?i file Excel
+                  </button>
+                </div>
+              </div>
+              <textarea 
+                className="as-textarea" 
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                placeholder="Nh?p k?ch b?n v�o d�y..."
+              />
+            </div>
 
-        {activeTask === 2 && (
-          <div className="panel">
-            <h3 className="section-title">Sản xuất Video Tự Động (Google Veo 3)</h3>
-            <p>Hệ thống sẽ lấy dữ liệu từ Tab 1, tự động gọi Veo 3 vẽ hình nền, tự động lồng tiếng, và render ra video 9:16 hoàn chỉnh.</p>
-            <label className="input-label mt-2">Google Veo 3 API Key</label>
-            <input type="password" className="form-control mb-3" placeholder="Nhập API Key của bạn..." value={apiKey} onChange={(e) => setApiKey(e.target.value)} />
-            <button className="btn-export-large mt-3" style={{ width: '300px' }}>Bắt Đầu Render Hàng Loạt</button>
+            {/* Right Panel */}
+            <div className="as-panel">
+              <div className="as-panel-header">
+                <div>
+                  <h3 className="as-panel-title">B?n xem tru?c (�� t�ch c�u)</h3>
+                  <div className="as-panel-subtitle">{scenes.length} c?nh du?c t�m th?y</div>
+                </div>
+              </div>
+              
+              <div className="as-scene-list">
+                {scenes.map((scene, index) => (
+                  <div key={index} className={`as-scene-card ${index < 2 ? 'active' : ''}`}>
+                    <div className="as-scene-header"># C?nh {index + 1}</div>
+                    <div className="as-scene-text">{scene}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
-        )}
-      </div>
+
+          <div className="as-footer">
+            <button className="btn-continue" onClick={() => setActiveTab(2)}>
+              Luu k?ch b?n & Ti?p t?c ?
+            </button>
+          </div>
+        </>
+      )}
+
+      {activeTab === 2 && (
+        <div className="as-content-area">
+           <div className="as-panel" style={{ alignItems: 'center', justifyContent: 'center' }}>
+             <h3 className="as-panel-title" style={{ fontSize: '24px', marginBottom: '20px' }}>S?n xu?t Video v?i Google Veo 3</h3>
+             <p style={{ color: '#8b8e9d', marginBottom: '30px' }}>H? th?ng s? l?y {scenes.length} c?nh t? Bu?c 1, t? d?ng g?i AI sinh h�nh n?n v� l?ng ti?ng.</p>
+             <button className="btn-continue" style={{ padding: '15px 40px', fontSize: '16px' }} onClick={() => setActiveTab(1)}>
+              ? Quay l?i ch?nh s?a
+             </button>
+           </div>
+        </div>
+      )}
     </div>
   );
 }
