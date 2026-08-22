@@ -4,7 +4,7 @@ import './AutoShortsPage.css';
 export function AutoShortsPage() {
   const [activeTab, setActiveTab] = useState(1);
   const [inputType, setInputType] = useState('manual');
-  const [inputText, setInputText] = useState("H�m nay t�i s? hu?ng d?n c�c b?n c�ch l�m video t? d?ng.\nCh? v?i v�i thao t�c co b?n, AI s? lo to�n b? ph?n h�nh ?nh.\nH�y dang k� k�nh d? xem th�m nhi?u c�ng c? hay nh�!");
+  const [inputText, setInputText] = useState("Hôm nay tôi sẽ hướng dẫn các bạn cách làm video tự động.\nChỉ với vài thao tác cơ bản, AI sẽ lo toàn bộ phần hình ảnh.\nHãy đăng ký kênh để xem thêm nhiều công cụ hay nhé!");
   const [scenes, setScenes] = useState<string[]>([]);
 
   // Split text into scenes based on newlines or punctuation
@@ -28,12 +28,12 @@ export function AutoShortsPage() {
       <div className="as-stepper-box">
         <div className={`as-step ${activeTab >= 1 ? 'active' : ''}`}>
           <div className="as-step-circle">#1</div>
-          <div className="as-step-label">Nh?p & Qu?n l� k?ch b?n</div>
+          <div className="as-step-label">Nhập & Quản lý kịch bản</div>
         </div>
         <div className="as-step-line" style={{ background: activeTab >= 2 ? '#ff6600' : 'linear-gradient(90deg, #ff6600 50%, #4a4d5e 50%)' }}></div>
         <div className={`as-step ${activeTab >= 2 ? 'active' : ''}`}>
           <div className="as-step-circle">#2</div>
-          <div className="as-step-label">C?u h�nh & S?n xu?t Video</div>
+          <div className="as-step-label">Cấu hình & Sản xuất Video</div>
         </div>
       </div>
 
@@ -43,19 +43,19 @@ export function AutoShortsPage() {
             {/* Left Panel */}
             <div className="as-panel">
               <div className="as-panel-header">
-                <h3 className="as-panel-title">Ngu?n D? Li?u</h3>
+                <h3 className="as-panel-title">Nguồn Dữ Liệu</h3>
                 <div className="as-toggle-group">
                   <button 
                     className={`as-toggle-btn ${inputType === 'manual' ? 'active' : ''}`}
                     onClick={() => setInputType('manual')}
                   >
-                    Nh?p th? c�ng
+                    Nhập thủ công
                   </button>
                   <button 
                     className={`as-toggle-btn ${inputType === 'excel' ? 'active' : ''}`}
                     onClick={() => setInputType('excel')}
                   >
-                    T?i file Excel
+                    Tải file Excel
                   </button>
                 </div>
               </div>
@@ -63,7 +63,7 @@ export function AutoShortsPage() {
                 className="as-textarea" 
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
-                placeholder="Nh?p k?ch b?n v�o d�y..."
+                placeholder="Nhập kịch bản vào đây..."
               />
             </div>
 
@@ -71,15 +71,15 @@ export function AutoShortsPage() {
             <div className="as-panel">
               <div className="as-panel-header">
                 <div>
-                  <h3 className="as-panel-title">B?n xem tru?c (�� t�ch c�u)</h3>
-                  <div className="as-panel-subtitle">{scenes.length} c?nh du?c t�m th?y</div>
+                  <h3 className="as-panel-title">Bản xem trước (Đã tách câu)</h3>
+                  <div className="as-panel-subtitle">{scenes.length} cảnh được tìm thấy</div>
                 </div>
               </div>
               
               <div className="as-scene-list">
                 {scenes.map((scene, index) => (
                   <div key={index} className={`as-scene-card ${index < 2 ? 'active' : ''}`}>
-                    <div className="as-scene-header"># C?nh {index + 1}</div>
+                    <div className="as-scene-header"># Cảnh {index + 1}</div>
                     <div className="as-scene-text">{scene}</div>
                   </div>
                 ))}
@@ -89,7 +89,7 @@ export function AutoShortsPage() {
 
           <div className="as-footer">
             <button className="btn-continue" onClick={() => setActiveTab(2)}>
-              Luu k?ch b?n & Ti?p t?c ?
+              Lưu kịch bản & Tiếp tục →
             </button>
           </div>
         </>
@@ -98,10 +98,10 @@ export function AutoShortsPage() {
       {activeTab === 2 && (
         <div className="as-content-area">
            <div className="as-panel" style={{ alignItems: 'center', justifyContent: 'center' }}>
-             <h3 className="as-panel-title" style={{ fontSize: '24px', marginBottom: '20px' }}>S?n xu?t Video v?i Google Veo 3</h3>
-             <p style={{ color: '#8b8e9d', marginBottom: '30px' }}>H? th?ng s? l?y {scenes.length} c?nh t? Bu?c 1, t? d?ng g?i AI sinh h�nh n?n v� l?ng ti?ng.</p>
+             <h3 className="as-panel-title" style={{ fontSize: '24px', marginBottom: '20px' }}>Sản xuất Video với Google Veo 3</h3>
+             <p style={{ color: '#8b8e9d', marginBottom: '30px' }}>Hệ thống sẽ lấy {scenes.length} cảnh từ Bước 1, tự động gọi AI sinh hình nền và lồng tiếng.</p>
              <button className="btn-continue" style={{ padding: '15px 40px', fontSize: '16px' }} onClick={() => setActiveTab(1)}>
-              ? Quay l?i ch?nh s?a
+              ← Quay lại chỉnh sửa
              </button>
            </div>
         </div>
