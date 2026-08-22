@@ -13,7 +13,7 @@ function logToWindow(mainWindow: BrowserWindow, message: string) {
 }
 
 // Giả lập API call tới Google Veo 3
-async function generateVeo3Video(apiKey: string, prompt: string, outputPath: string, log: (m: string) => void) {
+async function generateVeo3Video(_apiKey: string, prompt: string, outputPath: string, log: (m: string) => void) {
   log(`Đang gọi Google Veo 3 API cho kịch bản: "${prompt.substring(0, 30)}..."`);
   
   // NOTE: Thay thế đoạn này bằng actual REST API call to Google Veo 3 endpoint

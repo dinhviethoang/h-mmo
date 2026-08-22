@@ -73,7 +73,7 @@ export function setupVideoEngine(mainWindow: BrowserWindow) {
           // We use delogo to apply blur
           const fw = `max(iw*${region.w}/100\\,10)`
           const fh = `max(ih*${region.h}/100\\,10)`
-          complexFilter.push(`delogo=x='iw*${region.x}/100':y='ih*${region.y}/100':w='${fw}':h='${fh}'`)
+          vFilters.push(`delogo=x='iw*${region.x}/100':y='ih*${region.y}/100':w='${fw}':h='${fh}'`)
         })
       }
 

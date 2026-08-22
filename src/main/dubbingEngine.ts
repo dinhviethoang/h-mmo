@@ -66,13 +66,10 @@ function parseSrt(srtContent: string) {
 export function setupDubbingEngine(mainWindow: BrowserWindow) {
   ipcMain.handle('dubbing:generate', async (_event, options) => {
     return new Promise(async (resolve, reject) => {
-      const { videoPath, srtPath, voiceId, flipVideo, previewMode } = options;
+      const { videoPath, srtPath, voiceId, flipVideo: _flipVideo, previewMode } = options;
       const log = (msg: string) => mainWindow.webContents.send('dubbing:log', msg);
       
       const parsedPath = path.parse(videoPath);
-      const outVideoPath = previewMode 
-        ? path.join(parsedPath.dir, `${parsedPath.name}_dubbed_preview${parsedPath.ext}`)
-        : path.join(parsedPath.dir, `${parsedPath.name}_dubbed${parsedPath.ext}`);
       const tempDir = app.getPath('temp');
       const masterPcmPath = path.join(tempDir, `master_${parsedPath.name}.pcm`);
       

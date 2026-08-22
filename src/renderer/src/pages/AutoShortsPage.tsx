@@ -22,11 +22,11 @@ export function AutoShortsPage() {
 
   useEffect(() => {
     // Listen for backend logs
-    const removeListener = window.api.autoshortsLogs((logMsg: string) => {
+    window.api.autoshortsLogs((logMsg: string) => {
       setLogs((prev) => [...prev, logMsg]);
     });
     return () => {
-      if (removeListener) removeListener();
+      // Cleanup if needed
     };
   }, []);
 
