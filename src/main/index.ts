@@ -45,6 +45,7 @@ function createWindow(): BrowserWindow {
 import { setupVideoEngine } from './videoEngine'
 import { setupSubtitleEngine } from './subtitleEngine'
 import { setupDubbingEngine } from './dubbingEngine'
+import { setupAutoShortsEngine } from './autoshortsEngine'
 
 // Register custom protocol as privileged before app is ready
 protocol.registerSchemesAsPrivileged([
@@ -208,6 +209,7 @@ app.whenReady().then(() => {
   setupVideoEngine(mainWindow)
   setupSubtitleEngine(mainWindow)
   setupDubbingEngine(mainWindow)
+  setupAutoShortsEngine(mainWindow)
 
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the
