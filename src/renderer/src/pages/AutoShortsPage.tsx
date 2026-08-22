@@ -9,17 +9,33 @@ export function AutoShortsPage() {
 
   // Split text into scenes based on newlines or punctuation
   useEffect(() => {
-    if (!inputText) {
+    if (!inputText && inputType === 'manual') {
       setScenes([]);
       return;
     }
-    // Split by newline or period followed by space
-    const splitText = inputText
-      .split(/\n+|\.\s+/)
-      .map(s => s.trim())
-      .filter(s => s.length > 0);
-    setScenes(splitText);
-  }, [inputText]);
+    if (inputType === 'manual') {
+      // Split by newline or period followed by space
+      const splitText = inputText
+        .split(/\n+|\.\s+/)
+        .map(s => s.trim())
+        .filter(s => s.length > 0);
+      setScenes(splitText);
+    }
+  }, [inputText, inputType]);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Placeholder for Excel parsing logic
+    const file = e.target.files?.[0];
+    if (file) {
+      alert(`Đã chọn file: ${file.name}\nTính năng đọc Excel đang được phát triển!`);
+      // Fake processing
+      setScenes([
+        `Nội dung từ file ${file.name} - Dòng 1`,
+        `Nội dung từ file ${file.name} - Dòng 2`,
+        `Nội dung từ file ${file.name} - Dòng 3`
+      ]);
+    }
+  };
 
   return (
     <div className="autoshorts-page">
@@ -47,7 +63,12 @@ export function AutoShortsPage() {
                 <div className="as-toggle-group">
                   <button 
                     className={`as-toggle-btn ${inputType === 'manual' ? 'active' : ''}`}
-                    onClick={() => setInputType('manual')}
+                    onClick={() => {
+                      setInputType('manual');
+                      // Restore scenes from text
+                      const splitText = inputText.split(/\n+|\.\s+/).map(s => s.trim()).filter(s => s.length > 0);
+                      setScenes(splitText);
+                    }}
                   >
                     Nhập thủ công
                   </button>
@@ -59,12 +80,40 @@ export function AutoShortsPage() {
                   </button>
                 </div>
               </div>
-              <textarea 
-                className="as-textarea" 
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                placeholder="Nhập kịch bản vào đây..."
-              />
+              
+              {inputType === 'manual' ? (
+                <textarea 
+                  className="as-textarea" 
+                  value={inputText}
+                  onChange={(e) => setInputText(e.target.value)}
+                  placeholder="Nhập kịch bản vào đây..."
+                />
+              ) : (
+                <div className="as-upload-box" style={{ 
+                  flex: 1, 
+                  border: '2px dashed #4a4d5e', 
+                  borderRadius: '8px', 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  backgroundColor: '#16171e',
+                  cursor: 'pointer'
+                }}>
+                  <p style={{ color: '#8b8e9d', marginBottom: '15px' }}>Kéo thả file .xlsx / .csv vào đây</p>
+                  <label style={{ 
+                    backgroundColor: '#ff6600', 
+                    color: '#fff', 
+                    padding: '8px 20px', 
+                    borderRadius: '4px', 
+                    cursor: 'pointer',
+                    fontWeight: 500
+                  }}>
+                    Chọn File
+                    <input type="file" accept=".xlsx, .xls, .csv" style={{ display: 'none' }} onChange={handleFileUpload} />
+                  </label>
+                </div>
+              )}
             </div>
 
             {/* Right Panel */}
