@@ -4,11 +4,18 @@ import { electronAPI } from '@electron-toolkit/preload'
 // Custom APIs for renderer
 const api = {
   selectVideo: () => ipcRenderer.invoke('dialog:openVideo'),
+  selectAudio: () => ipcRenderer.invoke('dialog:openAudio'),
   selectSrt: () => ipcRenderer.invoke('dialog:openSrt'),
   selectDirectory: () => ipcRenderer.invoke('dialog:openDirectory'),
   selectFile: () => ipcRenderer.invoke('dialog:openFile'),
   readFile: (filePath: string) => ipcRenderer.invoke('read-file', filePath),
   processVideo: (options: any) => ipcRenderer.invoke('video:process', options),
+  cancelVideo: () => ipcRenderer.invoke('video:cancel'),
+  onVideoProgress: (callback: (p: { percent: number; timeText?: string }) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, p: { percent: number; timeText?: string }) => callback(p)
+    ipcRenderer.on('video:progress', handler)
+    return () => ipcRenderer.removeListener('video:progress', handler)
+  },
   onVideoLog: (callback: (log: string) => void) => {
     ipcRenderer.on('video:log', (_event, log) => callback(log))
   },
@@ -29,14 +36,16 @@ const api = {
   voiceDeleteClone: (name: string) => ipcRenderer.invoke('voice:deleteClone', name),
   voicePreview: (opts: any) => ipcRenderer.invoke('voice:preview', opts),
   onVoiceLog: (callback: (log: string) => void) => {
-    ipcRenderer.removeAllListeners('voice:log');
-    ipcRenderer.on('voice:log', (_event, log) => callback(log))
+    const handler = (_event: Electron.IpcRendererEvent, log: string) => callback(log)
+    ipcRenderer.on('voice:log', handler)
+    return () => ipcRenderer.removeListener('voice:log', handler)
   },
   douyinConnect: () => ipcRenderer.invoke('douyin:connect'),
   douyinCookieStatus: () => ipcRenderer.invoke('douyin:cookieStatus'),
   onDownloadProgress: (callback: (log: string) => void) => {
-    ipcRenderer.removeAllListeners('download-progress');
-    ipcRenderer.on('download-progress', (_event, log) => callback(log))
+    const handler = (_event: Electron.IpcRendererEvent, log: string) => callback(log)
+    ipcRenderer.on('download-progress', handler)
+    return () => ipcRenderer.removeListener('download-progress', handler)
   }
 }
 

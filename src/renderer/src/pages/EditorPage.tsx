@@ -32,7 +32,10 @@ const DEFAULTS = {
   voiceId: 'google-free',
   fitEnabled: true,
   fitMaxRate: 1.35,
-  fitBorrowGap: true
+  fitBorrowGap: true,
+  speed: 1 as number, aspect: 'original' as 'original' | '9:16' | '16:9' | '1:1' | '4:5', fitMode: 'blur' as 'crop' | 'pad' | 'blur',
+  bgmPath: '', bgmVolume: 0.3, bgmLoop: true, bgmFadeIn: 0, bgmFadeOut: 0, originalVolume: 1,
+  quality: 'balanced' as 'fast' | 'balanced' | 'high'
 };
 type Opts = typeof DEFAULTS;
 export type EditorOpts = Opts;
@@ -93,6 +96,12 @@ export function EditorPage() {
   useEffect(() => { try { localStorage.setItem(STORE, JSON.stringify(o)); } catch { /* bỏ qua */ } }, [o]);
 
   const [currentTimeMs, setCurrentTimeMs] = useState(0);
+  type Segment = { start: number; end: number };
+  const [segments, setSegments] = useState<Segment[]>([]);
+  const [selectedSegment, setSelectedSegment] = useState<number>(-1);
+  const undoRef = useRef<{ past: Segment[][]; future: Segment[][] }>({ past: [], future: [] });
+  const [progress, setProgress] = useState<number | null>(null);
+  const progressUnsub = useRef<(() => void) | null>(null);
   const [duration, setDuration] = useState(0);
   const [vsize, setVsize] = useState({ w: 1080, h: 1920 });
   const [box, setBox] = useState({ w: 0, h: 0 });
@@ -117,6 +126,34 @@ export function EditorPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => { logEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [logs]);
+  const editSegments = (next: Segment[]) => {
+    undoRef.current.past.push(segments.map(x => ({ ...x }))); undoRef.current.future = [];
+    setSegments(next); setSelectedSegment(-1);
+  };
+  const seek = (seconds: number) => { const v = videoRef.current; if (!v) return; v.currentTime = Math.max(0, Math.min(duration / 1000, seconds)); setCurrentTimeMs(v.currentTime * 1000); };
+  const addSegment = (start: number, end: number) => {
+    const sorted = [...segments, { start: Math.max(0, start), end: Math.min(duration / 1000, end) }].filter(x => x.end > x.start).sort((a,b) => a.start-b.start);
+    const merged: Segment[] = [];
+    sorted.forEach(x => { const prev = merged[merged.length-1]; if (prev && x.start <= prev.end) prev.end = Math.max(prev.end, x.end); else merged.push({ ...x }); });
+    editSegments(merged);
+  };
+  useEffect(() => () => progressUnsub.current?.(), []);
+  useEffect(() => { if (!isProcessing) setProgress(null); }, [isProcessing]);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (/INPUT|TEXTAREA|SELECT/.test((e.target as HTMLElement)?.tagName || '')) return;
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); const p=undoRef.current.past.pop(); if(p){undoRef.current.future.push(segments);setSegments(p);} return; }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') { e.preventDefault(); const n=undoRef.current.future.pop(); if(n){undoRef.current.past.push(segments);setSegments(n);} return; }
+      if (e.code === 'Space') { e.preventDefault(); const v=videoRef.current; if(v) v.paused ? v.play() : v.pause(); }
+      else if(e.key==='ArrowLeft'||e.key==='ArrowRight') { e.preventDefault(); seek((currentTimeMs/1000)+(e.key==='ArrowRight'?1:-1)*(e.shiftKey?5:1)); }
+      else if(e.key.toLowerCase()==='i') setIn(); else if(e.key.toLowerCase()==='o') setOut(); else if(e.key.toLowerCase()==='s') splitAt();
+      else if(e.key==='Delete' && selectedSegment>=0) editSegments(segments.filter((_,i)=>i!==selectedSegment));
+    };
+    window.addEventListener('keydown',onKey); return ()=>window.removeEventListener('keydown',onKey);
+  }, [segments, currentTimeMs, selectedSegment]);
+  const setIn = () => { const t=Math.min(duration/1000,currentTimeMs/1000), i=selectedSegment>=0?selectedSegment:Math.max(0,segments.length-1), s=segments.map(x=>({...x})); if(s[i]) s[i].start=t; else s.push({start:t,end:duration/1000}); editSegments(s.filter(x=>x.end>x.start).sort((a,b)=>a.start-b.start)); };
+  const setOut = () => { const t=Math.min(duration/1000,currentTimeMs/1000), i=selectedSegment>=0?selectedSegment:Math.max(0,segments.length-1), s=segments.map(x=>({...x})); if(s[i]) s[i].end=t; editSegments(s.filter(x=>x.end>x.start).sort((a,b)=>a.start-b.start)); };
+  const splitAt = () => { const t=currentTimeMs/1000, i=segments.findIndex(x=>t>x.start&&t<x.end); if(i<0)return; const s=segments.map(x=>({...x})), x=s.splice(i,1)[0]; s.splice(i,0,{start:x.start,end:t},{start:t,end:x.end}); editSegments(s); };
 
   // nạp font riêng của H-MMO để xem trước và đo độ rộng chữ đúng font
   const loadFonts = async (list?: { family: string; file: string }[]) => {
@@ -189,6 +226,10 @@ export function EditorPage() {
   };
 
   const runPipeline = async (isPreview = false) => {
+    progressUnsub.current?.();
+    const api = (window as any).api;
+    if (api?.onVideoProgress) progressUnsub.current = api.onVideoProgress((p: { percent: number }) => setProgress(p.percent));
+    setProgress(null);
     if (!videoPath) { setLogs((prev) => [...prev, '[LỖI] Bạn chưa chọn video!']); return; }
     setIsProcessing(true);
     setLogs([isPreview ? 'Bắt đầu tạo bản xem trước (15 giây)...' : 'Bắt đầu xử lý video...']);
@@ -218,13 +259,18 @@ export function EditorPage() {
         burnStyle: burnStyle(),
         fontSize: o.fontSize, textColor: o.textColor, borderColor: o.borderColor, borderWidth: o.borderWidth, addBg: o.addBg, fontFamily: o.fontFamily,
         bgVolume: o.bgVolume / 100, dubVolume: o.dubVolume / 100,
-        flipVideo: o.flipVideo, applySubtitles: o.enableSubtitles, previewMode: isPreview
+        flipVideo: o.flipVideo, applySubtitles: o.enableSubtitles, previewMode: isPreview,
+        ...(segments.length ? { segments: segments.map(s => ({ start: s.start, end: s.end })) } : {}),
+        speed: o.speed, aspect: o.aspect, fitMode: o.fitMode,
+        ...(o.bgmPath ? { bgm: { path: o.bgmPath, volume: o.bgmVolume, loop: o.bgmLoop, fadeIn: o.bgmFadeIn, fadeOut: o.bgmFadeOut } } : {}),
+        originalVolume: o.originalVolume, quality: o.quality
       });
-      if (isPreview && out) { setPreviewOut(out); setPreviewStamp(Date.now()); setShowPreviewOut(true); setLogs((prev) => [...prev, 'Đang phát bản xem trước (có tiếng đã trộn) ngay trong khung bên trái.']); }
+      if (isPreview && out) { setCurrentTimeMs(0); setPreviewOut(out); setPreviewStamp(Date.now()); setShowPreviewOut(true); setLogs((prev) => [...prev, 'Đang phát bản xem trước (có tiếng đã trộn) ngay trong khung bên trái.']); }
     } catch (e: any) {
-      setLogs((prev) => [...prev, `[LỖI]: ${String(e.message).replace(/^Error invoking remote method '[^']+': (Error: )?/, '')}`]);
+      const msg=String(e.message || e); setLogs((prev) => [...prev, /cancel/i.test(msg) ? 'Đã hủy' : `[LỖI]: ${msg.replace(/^Error invoking remote method '[^']+': (Error: )?/, '')}`]);
     } finally {
-      setIsProcessing(false);
+      progressUnsub.current?.(); progressUnsub.current = null;
+      setIsProcessing(false); setProgress(null);
     }
   };
 
@@ -361,7 +407,7 @@ export function EditorPage() {
           <div className="panel-header">
             <span className="panel-title">{showingOut ? 'BẢN XEM TRƯỚC ĐÃ XUẤT (15s)' : 'BẢN XEM TRƯỚC'}</span>
             {previewOut && (
-              <button className="btn-outline-dark" style={{ width: 'auto', padding: '2px 10px', fontSize: 11 }} onClick={() => setShowPreviewOut(!showPreviewOut)}>
+              <button className="btn-outline-dark" style={{ width: 'auto', padding: '2px 10px', fontSize: 11 }} onClick={() => { setCurrentTimeMs(0); setShowPreviewOut(!showPreviewOut); }}>
                 {showPreviewOut ? '← Về video gốc' : 'Xem bản đã xuất 15s'}
               </button>
             )}
@@ -383,10 +429,13 @@ export function EditorPage() {
                     onLoadedMetadata={(e) => {
                       const v = e.currentTarget;
                       setDuration((v.duration || 0) * 1000);
+                      v.playbackRate = showingOut ? 1 : o.speed;
+                      setCurrentTimeMs(0);
                       if (!showingOut && v.videoWidth) setVsize({ w: v.videoWidth, h: v.videoHeight });
                     }}
-                    onTimeUpdate={(e) => setCurrentTimeMs(e.currentTarget.currentTime * 1000)}
+                    onTimeUpdate={(e) => { const v=e.currentTarget, t=v.currentTime; if(!showingOut && segments.length && !segments.some(s=>t>=s.start&&t<s.end)){ const next=segments.find(s=>s.start>t); if(next){ v.currentTime=next.start; return; } if(t<segments[0].start){v.currentTime=segments[0].start;return;} if(t>=segments[segments.length-1].end){v.currentTime=segments[segments.length-1].end;v.pause();return;} } setCurrentTimeMs(t*1000); }}
                   />
+                  {!showingOut && o.aspect !== 'original' && <div className="aspect-guide" style={{aspectRatio:o.aspect.replace(':',' / '), maxWidth:'92%', maxHeight:'92%'}} />}
                   {renderSubs()}
                   {!showingOut && o.enableBlur && o.blurRegions.map((r, i) => (
                     <DragRect key={r.id} r={r} label={`${r.mode === 'black' ? 'Che' : r.mode === 'delogo' ? 'Xoá logo' : 'Mờ'} ${i + 1}`}
@@ -413,6 +462,36 @@ export function EditorPage() {
               <button className="btn-outline-dark" style={{ width: 'auto', padding: '4px 10px', fontSize: 12 }} onClick={addRegion}>+ Vùng mờ</button>
             </div>
           )}
+
+          {videoPath && !showingOut && <div className="timeline-editor">
+            <div className="timeline-actions">
+              <button onClick={setIn}>Đặt điểm vào (I)</button><button onClick={setOut}>Đặt điểm ra (O)</button>
+              <button onClick={()=>addSegment(currentTimeMs/1000, Math.min(duration/1000,currentTimeMs/1000+5))}>Thêm đoạn</button>
+              <button onClick={splitAt}>Tách tại đầu phát (S)</button>
+              <button disabled={selectedSegment<0} onClick={()=>editSegments(segments.filter((_,i)=>i!==selectedSegment))}>Xóa đoạn</button>
+              <button onClick={()=>editSegments([])}>Xóa tất cả</button>
+            </div>
+            <div className="timeline-ruler" onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);const r=e.currentTarget.getBoundingClientRect(); seek(((e.clientX-r.left)/r.width)*(duration/1000));}} onPointerMove={e=>{if(e.buttons){const r=e.currentTarget.getBoundingClientRect();seek(((e.clientX-r.left)/r.width)*(duration/1000));}}}>
+              {Array.from({length:6},(_,i)=><span key={i} style={{left:`${i*20}%`}}>{fmt(duration*i/5)}</span>)}
+              {segments.map((s,i)=><button key={i} title={`${s.start.toFixed(2)}–${s.end.toFixed(2)}s`} className={`timeline-segment ${selectedSegment===i?'selected':''}`} style={{left:`${s.start/(duration/1000||1)*100}%`,width:`${(s.end-s.start)/(duration/1000||1)*100}%`}} onClick={e=>{e.stopPropagation();setSelectedSegment(i);}} />)}
+              <i className="timeline-playhead" style={{left:`${currentTimeMs/(duration||1)*100}%`}} />
+            </div>
+          </div>}
+          <div className="timeline-options">
+            <label>Tốc độ <select className="form-select" value={o.speed} onChange={e=>{set('speed',Number(e.target.value));if(videoRef.current)videoRef.current.playbackRate=Number(e.target.value);}}>{[0.5,0.75,1,1.25,1.5,2].map(x=><option key={x}>{x}</option>)}</select></label>
+            <label>Tỷ lệ <select className="form-select" value={o.aspect} onChange={e=>set('aspect',e.target.value as Opts['aspect'])}>{[['original','Gốc'],['9:16','9:16'],['16:9','16:9'],['1:1','1:1'],['4:5','4:5']].map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></label>
+            <label>Khung <select className="form-select" value={o.fitMode} onChange={e=>set('fitMode',e.target.value as Opts['fitMode'])}><option value="crop">Cắt</option><option value="pad">Viền đen</option><option value="blur">Nền mờ</option></select></label>
+            <label>Chất lượng <select className="form-select" value={o.quality} onChange={e=>set('quality',e.target.value as Opts['quality'])}><option value="fast">Nhanh</option><option value="balanced">Cân bằng</option><option value="high">Cao</option></select></label>
+          </div>
+          <div className="timeline-options audio-options">
+            <button className="btn-outline-dark" style={{width:'auto'}} onClick={async()=>{const p=await (window as any).api.selectAudio?.();if(p)set('bgmPath',p);}}>Chọn nhạc nền</button><span>{o.bgmPath.split(/[\\/]/).pop()||'Chưa chọn nhạc'}</span>
+            <label>Nhạc {Math.round(o.bgmVolume*100)}% <input type="range" min="0" max="1" step="0.01" value={o.bgmVolume} onChange={e=>set('bgmVolume',Number(e.target.value))}/></label>
+            <label><input type="checkbox" checked={o.bgmLoop} onChange={e=>set('bgmLoop',e.target.checked)}/> Lặp</label>
+            <label>Fade vào <input type="number" min="0" step="0.5" value={o.bgmFadeIn} onChange={e=>set('bgmFadeIn',Number(e.target.value))}/></label>
+            <label>Fade ra <input type="number" min="0" step="0.5" value={o.bgmFadeOut} onChange={e=>set('bgmFadeOut',Number(e.target.value))}/></label>
+            <label>Âm gốc {Math.round(o.originalVolume*100)}% <input type="range" min="0" max="2" step="0.01" value={o.originalVolume} onChange={e=>set('originalVolume',Number(e.target.value))}/></label>
+          </div>
+          {isProcessing && <div className="export-progress"><progress max="100" value={progress ?? undefined}/><span>{progress === null ? '…' : `${Math.round(progress)}%`}</span><button onClick={()=> (window as any).api.cancelVideo?.()}>Hủy</button></div>}
 
           <div className="log-console">
             {logs.map((log, index) => <div key={index} style={{ color: /LỖI/.test(log) ? '#f87171' : undefined }}>{log}</div>)}
