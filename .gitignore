@@ -4,15 +4,21 @@ out
 .DS_Store
 .eslintcache
 *.log*
-.venv* 
-dist/ 
-out/ 
-node_modules/ 
-*.zip 
-*.exe 
-*.mp4 
-*.mkv 
-*.mp3 
-*.wav 
-Kokoro-Vietnamese-main/ 
-*.whl 
+.venv*
+dist/
+out/
+node_modules/
+*.zip
+*.exe
+*.mp4
+*.mkv
+*.mp3
+*.wav
+Kokoro-Vietnamese-main/
+*.whl
+# rác/tệp lớn không đưa lên git
+*.bak
+*.pdf
+Downloads/
+Claude outputs/
+tts-test/

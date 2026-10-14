@@ -18,11 +18,22 @@ const api = {
   },
   getNeeyuVoices: () => ipcRenderer.invoke('get-neeyu-voices'),
   scanUrl: (url: string) => ipcRenderer.invoke('scan-url', url),
-  downloadVideos: (urls: string[], savePath: string, cookie: string) => ipcRenderer.invoke('download-videos', urls, savePath, cookie),
   generateAutoShorts: (options: any) => ipcRenderer.invoke('autoshorts:generate', options),
+  fetchGoogleSheet: (url: string) => ipcRenderer.invoke('autoshorts:fetchGsheet', url),
   autoshortsLogs: (callback: (log: string) => void) => {
     ipcRenderer.on('autoshorts:log', (_event, log) => callback(log))
   },
+  voiceList: () => ipcRenderer.invoke('voice:list'),
+  voicePickAudio: () => ipcRenderer.invoke('voice:pickAudio'),
+  voiceAddClone: (opts: any) => ipcRenderer.invoke('voice:addClone', opts),
+  voiceDeleteClone: (name: string) => ipcRenderer.invoke('voice:deleteClone', name),
+  voicePreview: (opts: any) => ipcRenderer.invoke('voice:preview', opts),
+  onVoiceLog: (callback: (log: string) => void) => {
+    ipcRenderer.removeAllListeners('voice:log');
+    ipcRenderer.on('voice:log', (_event, log) => callback(log))
+  },
+  douyinConnect: () => ipcRenderer.invoke('douyin:connect'),
+  douyinCookieStatus: () => ipcRenderer.invoke('douyin:cookieStatus'),
   onDownloadProgress: (callback: (log: string) => void) => {
     ipcRenderer.removeAllListeners('download-progress');
     ipcRenderer.on('download-progress', (_event, log) => callback(log))

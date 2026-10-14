@@ -4,7 +4,7 @@ import './SubtitlePage.css';
 
 export function SubtitlePage() {
   const [videoPath, setVideoPath] = useState<string | null>(null);
-  const [outputDir, setOutputDir] = useState<string>('C:\\Users\\ITHN\\Downloads');
+  const [outputDir, setOutputDir] = useState<string>('Thư mục H-MMO › 3. Phụ đề');
   const [apiKey, setApiKey] = useState<string>(() => localStorage.getItem('geminiApiKey') || '');
   useEffect(() => { localStorage.setItem('geminiApiKey', apiKey); }, [apiKey]);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -16,6 +16,7 @@ export function SubtitlePage() {
   const [lang, setLang] = useState('Tự nhận diện');
   const [translateEnabled, setTranslateEnabled] = useState(true);
   const [aiEngine, setAiEngine] = useState('Gemini AI');
+  const [sttEngine, setSttEngine] = useState('Whisper (offline)');
 
   useEffect(() => {
     logEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -61,7 +62,8 @@ export function SubtitlePage() {
         accuracy,
         lang,
         translateEnabled,
-        aiEngine
+        aiEngine,
+        sttEngine
       });
     } catch (e: any) {
       setIsProcessing(false);
@@ -91,6 +93,16 @@ export function SubtitlePage() {
 
             <div className="dropdown-row">
               <div className="dropdown-group">
+                <label>Công cụ nhận diện</label>
+                <select className="custom-select" value={sttEngine} onChange={e => setSttEngine(e.target.value)}>
+                  <option>Whisper (offline)</option>
+                  <option>Gemini AI (online)</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="dropdown-row">
+              <div className="dropdown-group">
                 <label>Mức nhận diện</label>
                 <select className="custom-select" value={accuracy} onChange={e => setAccuracy(e.target.value)}>
                   <option>Nhanh</option>
@@ -104,12 +116,17 @@ export function SubtitlePage() {
                   <option>Tự nhận diện</option>
                   <option>Tiếng Anh</option>
                   <option>Tiếng Trung</option>
+                  <option>Tiếng Việt</option>
+                  <option>Tiếng Nhật</option>
+                  <option>Tiếng Hàn</option>
                 </select>
               </div>
             </div>
 
             <div className="hint-text">
-              Whisper sẽ tự động tải thêm dữ liệu cần thiết nếu chưa có trên máy.
+              {sttEngine === 'Whisper (offline)'
+                ? 'Whisper chạy ngay trên máy, không cần API key. Lần đầu sẽ tải model: Nhanh ~0,5 GB, Cân bằng ~1,5 GB, Chính xác cao ~3 GB.'
+                : 'Gemini cần API Key (nhập ở mục Dịch phụ đề) và không hợp với video dài.'}
             </div>
 
             <div className="checkbox-list">
@@ -184,7 +201,7 @@ export function SubtitlePage() {
           <div className="preview-viewport" style={{ flex: 1, backgroundColor: 'var(--bg-dark)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
             {videoPath ? (
               <video 
-                src={`file:///${videoPath.replace(/\\/g, '/').split('/').map(s => encodeURIComponent(s)).join('/').replace('%3A', ':')}`} 
+                src={`hmmo-media://f/${encodeURIComponent(videoPath)}`} 
                 className="video-player" 
                 style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
                 controls 

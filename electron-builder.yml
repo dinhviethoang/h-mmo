@@ -9,8 +9,18 @@ files:
   - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+  # không đóng gói môi trường Python, file tạm, script thử nghiệm, video... (trước đây bị gom hết vào bản cài)
+  - '!{.venv-hmmo,.venv-tts,Downloads,Claude outputs,tts-test,Kokoro-Vietnamese-main,chrome-extension-autocomic,engines,licenses,dist}/**'
+  - '!*.{zip,whl,exe,mp4,mkv,mp3,wav,pdf,log,diff,bak,py,txt}'
+  - '!{fix_,test,rewrite_,build_autoshorts,link_frontend,create_backend,implement_free,make_10h,update_toggles,download}*'
 asarUnpack:
   - resources/**
+# Giấy phép mã nguồn bên thứ ba (FlowKit MIT...) đi kèm bản cài đặt
+extraResources:
+  - from: licenses
+    to: licenses
+  - from: engines
+    to: engines
 win:
   executableName: h-mmo
 nsis:

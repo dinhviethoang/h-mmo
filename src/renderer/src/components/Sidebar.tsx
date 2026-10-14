@@ -2,9 +2,17 @@ import {
   Download, 
   Link2, 
   PenTool, 
-  Video
+  Video,
+  Mic,
+  Crop,
+  ScanText,
+  Settings,
+  Layers,
+  ClipboardCheck,
+  Zap
 } from 'lucide-react';
 import './Sidebar.css';
+import logoGear from '../assets/logo-gear.png';
 
 interface SidebarProps {
   currentPath: string;
@@ -13,16 +21,25 @@ interface SidebarProps {
 
 export function Sidebar({ currentPath, onNavigate }: SidebarProps) {
   const menuItems = [
+    { id: 'pipeline', icon: Zap, label: 'Dây chuyền 1 chạm' },
     { id: 'download', icon: Download, label: 'Tải xuống' },
     { id: 'douyin', icon: Link2, label: 'Douyin' },
+    { id: 'transform', icon: Crop, label: 'Hiệu chỉnh video' },
     { id: 'subtitle', icon: PenTool, label: 'Tạo phụ đề' },
+    { id: 'ocr', icon: ScanText, label: 'Đọc chữ video' },
     { id: 'editor', icon: Video, label: 'Biên tập video' },
+    { id: 'assemble', icon: Layers, label: 'Ghép video' },
+    { id: 'review', icon: ClipboardCheck, label: 'Chấm chất lượng' },
+    { id: 'voices', icon: Mic, label: 'Giọng đọc' },
     { id: 'autoshorts', icon: Video, label: 'Auto Shorts (AI)' },
+    { id: 'autocomic', icon: PenTool, label: 'Auto Comic' },
+    { id: 'system', icon: Settings, label: 'Hệ thống' },
   ];
 
   return (
     <div className="sidebar">
       <div className="sidebar-header">
+        <img src={logoGear} className="logo-gear" alt="" />
         <h1 className="logo">H-MMO</h1>
       </div>
 

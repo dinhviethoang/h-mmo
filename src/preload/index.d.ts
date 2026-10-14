@@ -15,9 +15,17 @@ declare global {
       onSubtitleLog: (callback: (log: string) => void) => void
       getNeeyuVoices: () => Promise<any>
       scanUrl: (url: string) => Promise<any>
-      downloadVideos: (urls: string[], savePath: string, cookie: string) => Promise<any>
-      generateAutoShorts: (options: any) => Promise<any>,
-      autoshortsLogs: (callback: (log: string) => void) => void,
+      generateAutoShorts: (options: any) => Promise<any>
+      fetchGoogleSheet: (url: string) => Promise<string>
+      autoshortsLogs: (callback: (log: string) => void) => void
+      voiceList: () => Promise<any>
+      voicePickAudio: () => Promise<string | null>
+      voiceAddClone: (opts: any) => Promise<any>
+      voiceDeleteClone: (name: string) => Promise<any>
+      voicePreview: (opts: any) => Promise<any>
+      onVoiceLog: (callback: (log: string) => void) => void
+      douyinConnect: () => Promise<any>
+      douyinCookieStatus: () => Promise<any>
       onDownloadProgress: (callback: (log: string) => void) => void
     }
   }

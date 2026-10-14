@@ -1,0 +1,481 @@
+/* =====================================================================
+   H-MMO — Chủ đề CƠ KHÍ / CÔNG NGHIỆP (cam + đen)
+   File này nạp SAU main.css và ghi đè giao diện chung + từng trang.
+   Tắt chủ đề: xoá dòng import './assets/theme-industrial.css' trong main.tsx
+   ===================================================================== */
+
+:root {
+  --ind-orange: #ff6a00;
+  --ind-orange-hi: #ff8a2b;
+  --ind-orange-lo: #c94f00;
+  --ind-orange-glow: rgba(255, 106, 0, 0.45);
+  --ind-black: #0b0c0e;
+  --ind-steel-0: #101215;
+  --ind-steel-1: #16191d;
+  --ind-steel-2: #1d2126;
+  --ind-steel-3: #272c33;
+  --ind-edge: #33393f;
+  --ind-edge-hi: rgba(255, 255, 255, 0.07);
+  --ind-text: #e6e2dc;
+  --ind-text-dim: #9a958d;
+  --ind-text-mute: #6b6760;
+  --ind-ok: #8bd450;
+  --ind-err: #ff4d3d;
+
+  --ind-hazard: repeating-linear-gradient(-45deg, var(--ind-orange) 0 10px, #111 10px 20px);
+  --ind-brushed: repeating-linear-gradient(90deg, rgba(255,255,255,0.012) 0 1px, transparent 1px 3px);
+  --ind-bolts:
+    radial-gradient(circle at 9px 9px, #5b6168 0 2.2px, #1a1d21 2.6px 3.6px, transparent 4px),
+    radial-gradient(circle at calc(100% - 9px) 9px, #5b6168 0 2.2px, #1a1d21 2.6px 3.6px, transparent 4px),
+    radial-gradient(circle at 9px calc(100% - 9px), #5b6168 0 2.2px, #1a1d21 2.6px 3.6px, transparent 4px),
+    radial-gradient(circle at calc(100% - 9px) calc(100% - 9px), #5b6168 0 2.2px, #1a1d21 2.6px 3.6px, transparent 4px);
+  --ind-font-head: 'Chakra Petch', 'Be Vietnam Pro', sans-serif;
+
+  /* biến cũ của app -> trỏ sang bảng màu mới */
+  --accent: var(--ind-orange);
+  --accent-hover: var(--ind-orange-hi);
+  --accent-glow: var(--ind-orange-glow);
+  --bg-dark: var(--ind-black);
+  --bg-main: var(--ind-steel-0);
+  --bg-panel: var(--ind-steel-1);
+  --bg-input: #0d0f11;
+  --metal-base: var(--ind-steel-2);
+  --metal-dark: var(--ind-steel-1);
+  --metal-light: var(--ind-steel-3);
+  --metal-border: var(--ind-edge);
+  --border: var(--ind-edge);
+  --text-primary: var(--ind-text);
+  --text-secondary: #c9c4bc;
+  --text-muted: var(--ind-text-mute);
+  --success: var(--ind-ok);
+  --danger: var(--ind-err);
+  --color-primary: var(--ind-orange);
+}
+
+/* ---------- Nền chung: thép chải xước + lưới bản vẽ kỹ thuật ---------- */
+body {
+  background:
+    linear-gradient(rgba(255,106,0,0.025) 1px, transparent 1px) 0 0 / 40px 40px,
+    linear-gradient(90deg, rgba(255,106,0,0.025) 1px, transparent 1px) 0 0 / 40px 40px,
+    var(--ind-brushed),
+    radial-gradient(ellipse at 70% 0%, #1a1d22 0%, var(--ind-black) 70%);
+  color: var(--ind-text);
+}
+
+#root .ind-content > div {
+  background: transparent !important;
+}
+
+::-webkit-scrollbar-thumb { background: #3a3f45; border-radius: 0; border: 2px solid var(--ind-black); }
+::-webkit-scrollbar-thumb:hover { background: var(--ind-orange-lo); }
+::selection { background: var(--ind-orange); color: #000; }
+
+/* ---------- Tiêu đề: chữ kỹ thuật, có vạch cảnh báo ---------- */
+#root h1, #root h2, #root h3,
+#root .pane-title, #root .section-title, #root .panel-title, #root .as-panel-title {
+  font-family: var(--ind-font-head);
+  letter-spacing: 0.04em;
+}
+#root main h2 {
+  font-size: 26px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--ind-text);
+  position: relative;
+  padding-left: 16px;
+}
+#root main h2::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 4px; bottom: 4px;
+  width: 6px;
+  background: var(--ind-orange);
+  box-shadow: 0 0 10px var(--ind-orange-glow);
+}
+
+/* ---------- Thanh bên (Sidebar) ---------- */
+.sidebar {
+  background:
+    var(--ind-brushed),
+    linear-gradient(180deg, #17191d 0%, #0e1013 100%);
+  border-right: 1px solid #000;
+  box-shadow: inset -1px 0 0 var(--ind-edge-hi), 6px 0 18px rgba(0,0,0,0.6);
+}
+.sidebar::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 8px;
+  background: var(--ind-hazard);
+  opacity: 0.9;
+}
+.sidebar-header { padding: 28px 16px 20px; }
+
+.logo {
+  font-family: var(--ind-font-head);
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: 6px;
+  color: var(--ind-orange);
+  background: var(--ind-bolts), linear-gradient(180deg, #23272d, #121417);
+  border: 1px solid #000;
+  border-radius: 4px;
+  box-shadow: inset 0 1px 0 var(--ind-edge-hi), inset 0 0 0 1px #2c3137, 0 6px 14px rgba(0,0,0,0.6);
+  text-shadow: 0 0 12px var(--ind-orange-glow), 0 2px 0 #000;
+  position: relative;
+}
+.logo::after {
+  content: 'MEDIA WORKSHOP';
+  display: block;
+  font-size: 9px;
+  letter-spacing: 4px;
+  color: var(--ind-text-mute);
+  text-shadow: none;
+  margin-top: 4px;
+}
+
+.nav-item {
+  font-family: var(--ind-font-head);
+  font-size: 13.5px;
+  letter-spacing: 1.5px;
+  color: #b9b3aa;
+  background: linear-gradient(180deg, #22262b 0%, #191c20 100%);
+  border: 1px solid #000;
+  border-left: 4px solid #2d3237;
+  box-shadow: inset 0 1px 0 var(--ind-edge-hi), 0 2px 3px rgba(0,0,0,0.5);
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%);
+  margin-bottom: 6px;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.nav-item:hover {
+  color: var(--ind-text);
+  background: linear-gradient(180deg, #2a2f35 0%, #1e2226 100%);
+  border-left-color: var(--ind-orange-lo);
+}
+.nav-item.active {
+  color: #111;
+  background: linear-gradient(180deg, var(--ind-orange-hi) 0%, var(--ind-orange) 55%, var(--ind-orange-lo) 100%);
+  border: 1px solid #000;
+  border-left: 4px solid #000;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.25);
+  box-shadow: 0 0 16px var(--ind-orange-glow), inset 0 1px 0 rgba(255,255,255,0.35);
+}
+.nav-item.active .nav-icon { color: #111; }
+
+.sidebar-footer { border-top: 1px dashed #2d3237; }
+.version-label {
+  font-family: var(--ind-font-head);
+  letter-spacing: 2px;
+  color: var(--ind-text-mute);
+  text-transform: uppercase;
+}
+
+/* ---------- Khung / thẻ: tấm thép bắt ốc ---------- */
+#root .card, #root .panel, #root .input-card, #root .results-card, #root .accordion-card,
+#root .setting-card, #root .as-panel, #root .settings-panel, #root .logs-panel, #root .result-panel,
+#root .config-panel > .card, #root .queue-panel, #root .preview-panel {
+  background: var(--ind-bolts), var(--ind-brushed), linear-gradient(180deg, #1c1f24 0%, #15171b 100%) !important;
+  border: 1px solid #000 !important;
+  border-radius: 3px !important;
+  box-shadow: inset 0 1px 0 var(--ind-edge-hi), inset 0 0 0 1px #262a30, 0 8px 20px rgba(0,0,0,0.45) !important;
+}
+
+/* ---------- Ô nhập liệu: khe lõm ---------- */
+#root input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']),
+#root select, #root textarea,
+#root .url-input, #root .form-select, #root .form-input, #root .input-field, #root .dir-path {
+  background: #0c0d10 !important;
+  color: var(--ind-text) !important;
+  border: 1px solid #000 !important;
+  border-bottom-color: #2f343a !important;
+  border-radius: 2px !important;
+  box-shadow: inset 0 2px 5px rgba(0,0,0,0.85) !important;
+}
+#root input:focus, #root select:focus, #root textarea:focus {
+  border-color: var(--ind-orange) !important;
+  box-shadow: inset 0 2px 5px rgba(0,0,0,0.85), 0 0 0 1px var(--ind-orange-glow) !important;
+}
+
+/* ---------- Nút chính: cam công nghiệp ---------- */
+#root .btn-scan, #root .btn-download, #root .btn-primary, #root .btn-start, #root .btn-export,
+#root .btn-export-large, #root .btn-continue {
+  font-family: var(--ind-font-head);
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #111 !important;
+  background: linear-gradient(180deg, var(--ind-orange-hi) 0%, var(--ind-orange) 50%, var(--ind-orange-lo) 100%) !important;
+  border: 1px solid #000 !important;
+  border-radius: 2px !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.35), 0 3px 0 #6b2a00, 0 6px 12px rgba(0,0,0,0.5) !important;
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+  transition: filter 0.12s, transform 0.06s;
+}
+#root .btn-scan:hover, #root .btn-download:hover, #root .btn-primary:hover, #root .btn-start:hover,
+#root .btn-export:hover, #root .btn-export-large:hover, #root .btn-continue:hover {
+  filter: brightness(1.1);
+}
+#root .btn-scan:active, #root .btn-download:active, #root .btn-primary:active, #root .btn-start:active,
+#root .btn-export:active, #root .btn-export-large:active, #root .btn-continue:active {
+  transform: translateY(2px);
+}
+#root button:disabled { filter: grayscale(0.7) brightness(0.7); cursor: not-allowed; }
+
+/* Nút phụ: thép */
+#root .btn-outline, #root .btn-outline-dark, #root .file-btn, #root .tab-btn, #root .as-toggle-btn {
+  font-family: var(--ind-font-head);
+  letter-spacing: 1px;
+  color: #d6d0c7;
+  background: linear-gradient(180deg, #2a2e34 0%, #1b1e22 100%) !important;
+  border: 1px solid #000 !important;
+  border-radius: 2px !important;
+  box-shadow: inset 0 1px 0 var(--ind-edge-hi), 0 2px 0 #000 !important;
+}
+#root .btn-outline:hover, #root .btn-outline-dark:hover, #root .file-btn:hover, #root .tab-btn:hover {
+  color: var(--ind-orange-hi);
+  border-color: var(--ind-orange-lo) !important;
+}
+#root .tab-btn.active, #root .as-toggle-btn.active {
+  color: var(--ind-orange) !important;
+  border-bottom: 3px solid var(--ind-orange) !important;
+  background: #121417 !important;
+}
+
+/* Công tắc Bật/Tắt */
+#root .btn-toggle {
+  font-family: var(--ind-font-head);
+  border: 1px solid #000 !important;
+  border-radius: 2px !important;
+  background: #2a2e34 !important;
+  color: var(--ind-text-dim) !important;
+}
+#root .btn-toggle.on {
+  background: var(--ind-orange) !important;
+  color: #111 !important;
+  box-shadow: 0 0 12px var(--ind-orange-glow) !important;
+}
+
+/* ---------- Ô log: màn hình máy điều khiển ---------- */
+#root .log-box, #root .log-console, #root .logs-box {
+  font-family: 'Consolas', 'Cascadia Mono', monospace !important;
+  background:
+    repeating-linear-gradient(0deg, rgba(255,106,0,0.03) 0 1px, transparent 1px 3px),
+    #070807 !important;
+  color: #f2a65a !important;
+  border: 1px solid #000 !important;
+  border-top: 4px solid transparent !important;
+  border-image: var(--ind-hazard) 4 0 0 0 / 4px 0 0 0 !important;
+  border-radius: 0 !important;
+  box-shadow: inset 0 0 22px rgba(0,0,0,0.9) !important;
+}
+
+/* ---------- Thẻ video (trang tải xuống) ---------- */
+#root .video-card {
+  background: linear-gradient(180deg, #1d2025, #15171b) !important;
+  border: 1px solid #000 !important;
+  border-radius: 3px !important;
+}
+#root .video-card.selected, #root .video-card[class*='selected'] {
+  border-color: var(--ind-orange) !important;
+  box-shadow: 0 0 0 1px var(--ind-orange), 0 0 14px var(--ind-orange-glow) !important;
+  background: linear-gradient(180deg, #2a1c10, #17120d) !important;
+}
+
+/* Thanh trượt */
+#root input[type='range'] { accent-color: var(--ind-orange); }
+#root input[type='checkbox'], #root input[type='radio'] { accent-color: var(--ind-orange); }
+#root .checkbox-custom { border-radius: 0 !important; border-color: #c9c4bc !important; }
+#root .checkbox-custom.checked { background: var(--ind-orange) !important; border-color: var(--ind-orange) !important; }
+#root .url-input:focus { outline-color: var(--ind-orange) !important; }
+
+/* =====================================================================
+   PHẦN 2 — CHI TIẾT MÁY MÓC: thép gân chống trượt, đèn LED, bánh răng,
+   dải điều khiển, đinh tán, nhãn khắc
+   ===================================================================== */
+
+/* Thép gân chống trượt (diamond plate) cho thanh bên */
+.sidebar {
+  background:
+    radial-gradient(ellipse 5px 2px at 25% 25%, rgba(255,255,255,0.10), transparent 70%) 0 0 / 22px 22px,
+    radial-gradient(ellipse 2px 5px at 75% 75%, rgba(255,255,255,0.08), transparent 70%) 0 0 / 22px 22px,
+    linear-gradient(180deg, #1b1e22 0%, #0f1114 100%) !important;
+}
+/* Dải đinh tán dọc mép phải thanh bên */
+.sidebar::after {
+  content: '';
+  position: absolute;
+  top: 16px; bottom: 16px; right: 4px;
+  width: 8px;
+  background: radial-gradient(circle at 4px 4px, #6a7077 0 1.8px, #15171a 2.2px 3px, transparent 3.4px) 0 0 / 8px 34px repeat-y;
+  pointer-events: none;
+}
+
+/* Logo: biển tên dập nổi + bánh răng chìm phía sau */
+.logo {
+  overflow: hidden;
+  border-top: 3px solid var(--ind-orange) !important;
+}
+.logo::before {
+  content: '';
+  position: absolute;
+  right: -26px; top: -26px;
+  width: 90px; height: 90px;
+  opacity: 0.12;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath fill='%23ff6a00' d='M44 2h12l2 12a37 37 0 0 1 10 4l10-7 9 9-7 10a37 37 0 0 1 4 10l12 2v12l-12 2a37 37 0 0 1-4 10l7 10-9 9-10-7a37 37 0 0 1-10 4l-2 12H44l-2-12a37 37 0 0 1-10-4l-10 7-9-9 7-10a37 37 0 0 1-4-10L4 56V44l12-2a37 37 0 0 1 4-10l-7-10 9-9 10 7a37 37 0 0 1 10-4zM50 34a16 16 0 1 0 0 32 16 16 0 0 0 0-32z'/%3E%3C/svg%3E") center / contain no-repeat;
+  animation: ind-spin 22s linear infinite;
+}
+
+/* Mục menu: đèn LED nhỏ bên phải */
+.nav-item { position: relative; padding-right: 30px !important; }
+.nav-item::after {
+  content: '';
+  position: absolute;
+  right: 18px; top: 50%;
+  width: 7px; height: 7px;
+  margin-top: -3.5px;
+  border-radius: 50%;
+  background: #3a2414;
+  box-shadow: inset 0 1px 1px rgba(0,0,0,0.8);
+}
+.nav-item:hover::after { background: #7a3a10; }
+.nav-item.active::after {
+  background: #fff3c4;
+  box-shadow: 0 0 6px #fff, 0 0 12px #ffd27a;
+}
+
+/* ---------- Dải điều khiển trên cùng ---------- */
+.ind-controlbar {
+  height: 46px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 14px 0 0;
+  background:
+    var(--ind-brushed),
+    linear-gradient(180deg, #24282e 0%, #15181b 60%, #0e1013 100%);
+  border-bottom: 1px solid #000;
+  box-shadow: inset 0 1px 0 var(--ind-edge-hi), 0 3px 10px rgba(0,0,0,0.6);
+  position: relative;
+  z-index: 5;
+  overflow: hidden;
+}
+.ind-controlbar::after { /* băng cảnh báo mảnh dưới đáy */
+  content: '';
+  position: absolute; left: 0; right: 0; bottom: 0;
+  height: 3px;
+  background: var(--ind-hazard);
+  opacity: 0.85;
+}
+.ind-hazard-block {
+  width: 54px; align-self: stretch;
+  background: var(--ind-hazard);
+  box-shadow: inset -2px 0 0 #000;
+}
+.ind-plate {
+  display: flex; flex-direction: column; justify-content: center;
+  padding: 2px 18px; height: 38px;
+  background: var(--ind-bolts), linear-gradient(180deg, #2c3036, #1a1d21);
+  border: 1px solid #000;
+  box-shadow: inset 0 1px 0 var(--ind-edge-hi);
+  min-width: 190px;
+}
+.ind-plate-code { font: 600 9px var(--ind-font-head); letter-spacing: 3px; color: var(--ind-text-mute); line-height: 1.2; }
+.ind-plate-name { font: 700 14px var(--ind-font-head); letter-spacing: 2px; color: var(--ind-orange); text-transform: uppercase; line-height: 1.3; }
+.ind-vent { /* khe tản nhiệt */
+  width: 70px; height: 22px;
+  background: repeating-linear-gradient(90deg, #050607 0 4px, #2a2e33 4px 6px, transparent 6px 9px);
+  border-radius: 2px;
+  opacity: 0.85;
+}
+.ind-led-wrap { display: flex; align-items: center; gap: 6px; }
+.ind-led {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff 0 15%, var(--led) 45%, #000 120%);
+  box-shadow: 0 0 6px var(--led), 0 0 14px var(--led), inset 0 -1px 2px rgba(0,0,0,0.5);
+  border: 1px solid #000;
+}
+.ind-led.blink { animation: ind-blink 1.6s steps(2, start) infinite; }
+.ind-led-label { font: 600 10px var(--ind-font-head); letter-spacing: 2px; color: var(--ind-text-dim); }
+.ind-clock {
+  font: 700 16px 'Consolas', 'Cascadia Mono', monospace;
+  color: #ff8a2b;
+  text-shadow: 0 0 8px rgba(255,106,0,0.7);
+  background: #060706;
+  border: 1px solid #000;
+  box-shadow: inset 0 2px 6px rgba(0,0,0,0.9), 0 1px 0 var(--ind-edge-hi);
+  padding: 2px 10px;
+  letter-spacing: 2px;
+}
+.ind-colon { animation: ind-blink 1s steps(2, start) infinite; }
+.ind-gears { display: flex; align-items: flex-start; height: 40px; }
+.ind-gear-spin { animation: ind-spin linear infinite; }
+
+@keyframes ind-spin { to { transform: rotate(360deg); } }
+@keyframes ind-blink { 50% { opacity: 0.25; } }
+
+/* ---------- Khung: dải đinh tán trên mép + nhãn khắc ---------- */
+#root .card, #root .panel, #root .input-card, #root .results-card, #root .accordion-card,
+#root .setting-card, #root .as-panel, #root .settings-panel, #root .logs-panel, #root .result-panel,
+#root .queue-panel, #root .preview-panel {
+  position: relative;
+  border-top: 3px solid #2f343a !important;
+}
+#root .input-card::after, #root .results-card::after, #root .card::after, #root .panel::after,
+#root .settings-panel::after, #root .as-panel::after, #root .accordion-card::after {
+  content: '';
+  position: absolute; left: 22px; right: 22px; top: -2px; height: 6px;
+  background: radial-gradient(circle at 3px 3px, #5d636a 0 1.6px, #121417 2px 2.6px, transparent 3px) 0 0 / 26px 6px repeat-x;
+  pointer-events: none;
+}
+
+/* Tiêu đề trang: thêm vạch thước đo phía dưới */
+#root main h2 { padding-bottom: 6px; }
+#root main h2::after {
+  content: '';
+  position: absolute; left: 16px; bottom: -4px;
+  width: 240px; height: 6px;
+  background:
+    repeating-linear-gradient(90deg, var(--ind-orange-lo) 0 1px, transparent 1px 8px) 0 2px / 100% 4px no-repeat,
+    repeating-linear-gradient(90deg, var(--ind-orange) 0 1px, transparent 1px 40px);
+  opacity: 0.8;
+}
+
+/* Nút chính: thêm 2 ốc vít hai bên như nút bấm máy */
+#root .btn-scan, #root .btn-download, #root .btn-primary, #root .btn-start, #root .btn-export,
+#root .btn-export-large, #root .btn-continue {
+  background:
+    radial-gradient(circle at 8px 50%, #5a2600 0 2px, transparent 2.6px),
+    radial-gradient(circle at calc(100% - 8px) 50%, #5a2600 0 2px, transparent 2.6px),
+    linear-gradient(180deg, var(--ind-orange-hi) 0%, var(--ind-orange) 50%, var(--ind-orange-lo) 100%) !important;
+  padding-left: 22px !important;
+  padding-right: 22px !important;
+}
+
+/* Nền trang: bánh răng chìm cực mờ ở góc dưới phải */
+#root main {
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath fill='%23ff6a00' fill-opacity='0.05' d='M44 2h12l2 12a37 37 0 0 1 10 4l10-7 9 9-7 10a37 37 0 0 1 4 10l12 2v12l-12 2a37 37 0 0 1-4 10l7 10-9 9-10-7a37 37 0 0 1-10 4l-2 12H44l-2-12a37 37 0 0 1-10-4l-10 7-9-9 7-10a37 37 0 0 1-4-10L4 56V44l12-2a37 37 0 0 1 4-10l-7-10 9-9 10 7a37 37 0 0 1 10-4zM50 34a16 16 0 1 0 0 32 16 16 0 0 0 0-32z'/%3E%3C/svg%3E") right -140px bottom -140px / 420px no-repeat;
+  background-blend-mode: normal;
+}
+#root main::before { content: none; }
+
+/* Logo bánh răng chữ H phía trên biển tên */
+.sidebar-header { display: flex; flex-direction: column; align-items: center; gap: 0; }
+.logo-gear {
+  width: 76px; height: 76px;
+  margin-bottom: -18px;
+  position: relative; z-index: 2;
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.7)) drop-shadow(0 0 10px rgba(255,106,0,0.35));
+  transition: transform 0.6s cubic-bezier(.2,.8,.2,1);
+}
+.sidebar-header:hover .logo-gear { transform: rotate(60deg); }
+.sidebar-header .logo { width: 100%; padding-top: 24px; }
+
+.ind-folder-btn {
+  font: 700 11px var(--ind-font-head); letter-spacing: 2px; color: #d6d0c7;
+  padding: 6px 12px; border: 1px solid #000; border-radius: 2px;
+  background: linear-gradient(180deg, #2c3036, #1a1d21);
+  box-shadow: inset 0 1px 0 var(--ind-edge-hi), 0 2px 0 #000;
+}
+.ind-folder-btn:hover { color: var(--ind-orange-hi); border-color: var(--ind-orange-lo); }

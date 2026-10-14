@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "Auto Comic GPT Grabber",
+  "version": "1.0",
+  "description": "Gửi truyện từ ChatGPT thẳng về H-MMO",
+  "permissions": ["activeTab", "scripting"],
+  "host_permissions": [
+    "https://chatgpt.com/*",
+    "http://localhost:8888/*",
+    "https://files.oaiusercontent.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://chatgpt.com/*", "https://chat.openai.com/*"],
+      "js": ["content.js"]
+    }
+  ]
+}

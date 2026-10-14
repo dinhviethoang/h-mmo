@@ -1,12 +1,16 @@
 import { ipcMain, dialog, BrowserWindow, shell } from 'electron'
 import ffmpeg from 'fluent-ffmpeg'
-import ffmpegStatic from 'ffmpeg-static'
 import path from 'path'
 import fs from 'fs'
+import { app } from 'electron'
+import { workspaceDir } from './workspace'
+import { buildAss, fontsDir } from './subtitleBurn'
+import { probeMedia, filterPath } from './tools'
 
-// Set path for ffmpeg static binary
-if (ffmpegStatic) {
-  ffmpeg.setFfmpegPath(ffmpegStatic.replace('app.asar', 'app.asar.unpacked'))
+// Lấy kích thước khung hình thật (có xét video quay dọc bằng metadata rotate)
+function probeSize(file: string): { w: number; h: number } {
+  const m = probeMedia(file)
+  return { w: m.w || 1080, h: m.h || 1920 }
 }
 
 export function setupVideoEngine(mainWindow: BrowserWindow) {
@@ -52,75 +56,92 @@ export function setupVideoEngine(mainWindow: BrowserWindow) {
   // Export Video Process
   ipcMain.handle('video:process', async (_event, options) => {
     return new Promise((resolve, reject) => {
-      const { videoPath, dubbedAudioPath, srtPath, blurRegions, subStyle, fontSize = 32, textColor = '#ffffff', borderColor = '#000000', borderWidth = 2, addBg = false, fontFamily = 'Arial', flipVideo = false, applySubtitles = true, previewMode = false } = options
+      const { videoPath, dubbedAudioPath, srtPath, blurRegions, subStyle, assCues, burnStyle, bgVolume = 0.15, dubVolume = 1.0, fontSize = 32, textColor = '#ffffff', borderColor = '#000000', borderWidth = 2, addBg = false, fontFamily = 'Arial', flipVideo = false, applySubtitles = true, previewMode = false } = options
       
       const parsedPath = path.parse(videoPath)
-      const outPath = previewMode 
-        ? path.join(parsedPath.dir, `${parsedPath.name}_preview${parsedPath.ext}`)
-        : path.join(parsedPath.dir, `${parsedPath.name}_final${parsedPath.ext}`)
+      // Bản hoàn thành -> H-MMO › 4. Hoàn thành; bản xem trước -> thư mục tạm
+      const outPath = previewMode
+        ? path.join(app.getPath('temp'), `${parsedPath.name}_preview${parsedPath.ext}`)
+        : path.join(workspaceDir('hoanthanh'), `${parsedPath.name}_final${parsedPath.ext}`)
       
       let command = ffmpeg(videoPath)
       
       if (previewMode) {
         command = command.setDuration(15); // only 15 seconds for preview
       }
-      let vFilters: string[] = []
 
-      // 1. Blur Logic
-      if (blurRegions && Array.isArray(blurRegions)) {
-        blurRegions.forEach((region) => {
-          // Region is defined by x, y, w, h in percentages
-          // We use delogo to apply blur
-          const fw = `max(iw*${region.w}/100\\,10)`
-          const fh = `max(ih*${region.h}/100\\,10)`
-          vFilters.push(`delogo=x='iw*${region.x}/100':y='ih*${region.y}/100':w='${fw}':h='${fh}'`)
+      const fpath = filterPath
+      const { w: VW, h: VH } = probeSize(videoPath)
+      const filterChain: string[] = []
+      let cur = '0:v'
+      let n = 0
+
+      // 1. Vùng che: làm mờ thật (gblur), xoá logo (delogo) hoặc che đen; có thể giới hạn theo thời gian
+      if (blurRegions && Array.isArray(blurRegions) && blurRegions.length) {
+        blurRegions.forEach((region: any) => {
+          let x = Math.round((VW * Number(region.x || 0)) / 100)
+          let y = Math.round((VH * Number(region.y || 0)) / 100)
+          let w = Math.max(8, Math.round((VW * Number(region.w || 0)) / 100))
+          let h = Math.max(8, Math.round((VH * Number(region.h || 0)) / 100))
+          x = Math.min(Math.max(0, x), VW - 8)
+          y = Math.min(Math.max(0, y), VH - 8)
+          w = Math.min(w, VW - x)
+          h = Math.min(h, VH - y)
+          const a = Number(region.from), b = Number(region.to)
+          const en = region.from !== '' && region.from != null && region.to !== '' && region.to != null && b > a ? `:enable='between(t,${a},${b})'` : ''
+          const mode = region.mode || 'blur'
+          if (mode === 'delogo') {
+            // delogo không cho chạm mép khung
+            const dx = Math.max(1, x), dy = Math.max(1, y)
+            const dw = Math.min(w, VW - dx - 2), dh = Math.min(h, VH - dy - 2)
+            if (dw < 4 || dh < 4) return
+            filterChain.push(`[${cur}]delogo=x=${dx}:y=${dy}:w=${dw}:h=${dh}${en}[r${n}]`)
+          } else if (mode === 'black') {
+            filterChain.push(`[${cur}]drawbox=x=${x}:y=${y}:w=${w}:h=${h}:color=black@1:t=fill${en}[r${n}]`)
+          } else {
+            const sigma = Math.max(2, Math.round(Number(region.intensity || 10) * Math.max(VW, VH) / 640))
+            filterChain.push(`[${cur}]split=2[m${n}][c${n}]`)
+            filterChain.push(`[c${n}]crop=${w}:${h}:${x}:${y},gblur=sigma=${sigma}:steps=2[b${n}]`)
+            filterChain.push(`[m${n}][b${n}]overlay=${x}:${y}${en}[r${n}]`)
+          }
+          cur = `r${n}`
+          n++
         })
       }
 
-      // 2. Flip Logic
-      if (flipVideo) {
-        vFilters.push('hflip')
+      const vFilters: string[] = []
+      // 2. Lật ngang (sau vùng che, trước phụ đề để chữ không bị lật)
+      if (flipVideo) vFilters.push('hflip')
+
+      // 3. Phụ đề
+      if (applySubtitles && Array.isArray(assCues) && assCues.length && burnStyle) {
+        // Phụ đề có kiểu: file .ass dựng sẵn (đã ngắt dòng theo độ rộng thật, có hiệu ứng từng từ)
+        const dir = path.join(app.getPath('temp'), 'hmmo-sub')
+        fs.mkdirSync(dir, { recursive: true })
+        const assFile = path.join(dir, `sub_${Date.now()}.ass`)
+        fs.writeFileSync(assFile, '\ufeff' + buildAss(assCues, burnStyle, VW, VH), 'utf8')
+        const fd = fontsDir()
+        vFilters.push(`subtitles=filename='${fpath(assFile)}'${fs.existsSync(fd) ? `:fontsdir='${fpath(fd)}'` : ''}`)
+      } else if (applySubtitles && srtPath && fs.existsSync(srtPath)) {
+        const hexToAss = (hex: string, alpha: string = '00') => {
+          const clean = hex.replace('#', '')
+          if (clean.length !== 6) return '&H00FFFFFF'
+          return `&H${alpha}${clean.substring(4, 6)}${clean.substring(2, 4)}${clean.substring(0, 2)}`
+        }
+        let alignment = '2', marginV = '20'
+        if (subStyle === 'center') { alignment = '5'; marginV = '0' } else if (subStyle === 'top') { alignment = '8' }
+        const font = String(fontFamily).split(',')[0].replace(/["']/g, '').trim() || 'Arial'
+        const style = `FontName=${font},Alignment=${alignment},MarginV=${marginV},FontSize=${fontSize},PrimaryColour=${hexToAss(textColor)},OutlineColour=${hexToAss(borderColor)},BackColour=${hexToAss('#000000', '80')},BorderStyle=${addBg ? '3' : '1'},Outline=${addBg ? '0' : borderWidth},Shadow=0,Bold=-1`
+        vFilters.push(`subtitles='${fpath(srtPath)}':force_style='${style}'`)
       }
 
-      // Helper to convert #RRGGBB to ASS color &H00BBGGRR
-      const hexToAss = (hex: string, alpha: string = '00') => {
-        const clean = hex.replace('#', '')
-        if (clean.length !== 6) return '&H00FFFFFF'
-        const r = clean.substring(0, 2)
-        const g = clean.substring(2, 4)
-        const b = clean.substring(4, 6)
-        return `&H${alpha}${b}${g}${r}`
-      }
-
-      // 2. Hardsub Logic
-      if (applySubtitles && srtPath && fs.existsSync(srtPath)) {
-        // Normalize path for FFmpeg filter
-        const srtClean = srtPath.replace(/\\/g, '/').replace(/:/g, '\\:')
-        
-        let alignment = '2' // Bottom center
-        let marginV = '20'
-        
-        if (subStyle === 'center') { alignment = '5'; marginV = '0'; }
-        else if (subStyle === 'top') { alignment = '8'; marginV = '20'; }
-
-        const assTextColor = hexToAss(textColor)
-        const assBorderColor = hexToAss(borderColor)
-        const assBgColor = hexToAss('#000000', '80') // Semi-transparent black if background is active
-        
-        const borderStyleVal = addBg ? '3' : '1'
-        const outlineVal = addBg ? '0' : borderWidth.toString()
-
-        const style = `FontName=${fontFamily},Alignment=${alignment},MarginV=${marginV},FontSize=${fontSize},PrimaryColour=${assTextColor},OutlineColour=${assBorderColor},BackColour=${assBgColor},BorderStyle=${borderStyleVal},Outline=${outlineVal},Shadow=0,Bold=-1`
-        const subFilter = `subtitles='${srtClean}':force_style='${style}'`
-        vFilters.push(subFilter)
-      }
-
-      let filterChain: string[] = [];
-      let videoPad = '0:v';
-      
-      if (vFilters.length > 0) {
-        filterChain.push(`[0:v]${vFilters.join(',')}[vout]`);
-        videoPad = '[vout]';
+      let videoPad = '0:v'
+      if (vFilters.length) {
+        filterChain.push(`[${cur}]${vFilters.join(',')}[vout]`)
+        videoPad = '[vout]'
+      } else if (cur !== '0:v') {
+        filterChain.push(`[${cur}]null[vout]`)
+        videoPad = '[vout]'
       }
 
       let outputOptions: string[] = ['-y'];
@@ -133,8 +154,8 @@ export function setupVideoEngine(mainWindow: BrowserWindow) {
             '-ac', '1'
           ]);
           
-        filterChain.push('[0:a]volume=0.15[bg]');
-        filterChain.push('[1:a]volume=1.0[dub]');
+        filterChain.push(`[0:a]volume=${Math.max(0, Math.min(2, Number(bgVolume)))}[bg]`);
+        filterChain.push(`[1:a]volume=${Math.max(0, Math.min(3, Number(dubVolume)))}[dub]`);
         filterChain.push('[bg][dub]amix=inputs=2:duration=first[amix]');
         filterChain.push('[amix]alimiter=limit=-1.0dB[aout]');
         
@@ -165,9 +186,8 @@ export function setupVideoEngine(mainWindow: BrowserWindow) {
         .on('end', () => {
           mainWindow.webContents.send('video:log', '====== XUẤT VIDEO HOÀN TẤT ======')
           mainWindow.webContents.send('video:log', `Đã lưu tại: ${outPath}`)
-          if (previewMode) {
-            shell.openPath(outPath);
-          }
+          // bản xem trước được phát ngay trong tab (không mở trình phát ngoài)
+          if (!previewMode && !options.noReveal) shell.showItemInFolder(outPath);
           resolve(outPath)
         })
         .on('error', (err) => {

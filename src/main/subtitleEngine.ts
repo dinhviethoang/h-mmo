@@ -2,10 +2,13 @@ import { ipcMain, BrowserWindow, app } from 'electron'
 import { GoogleGenAI } from '@google/genai'
 import path from 'path'
 import fs from 'fs'
+import { workspaceDir } from './workspace'
+import { googleTranslateSrt } from './translate'
+import { requirePython, engineScript } from './tools'
 const ffmpeg = require('fluent-ffmpeg');
 
 // ====== HELPER: Tìm model khả dụng và thử với retry + fallback ======
-async function findAndCallModel(
+export async function findAndCallModel(
   ai: InstanceType<typeof GoogleGenAI>,
   apiKey: string,
   contents: any,
@@ -99,7 +102,7 @@ async function findAndCallModel(
 }
 
 // ====== HELPER: Dọn markdown ======
-function cleanMarkdown(text: string): string {
+export function cleanMarkdown(text: string): string {
   let clean = text.trim()
   if (clean.startsWith('```srt')) clean = clean.substring(6).trim()
   else if (clean.startsWith('```')) clean = clean.substring(3).trim()
@@ -107,16 +110,68 @@ function cleanMarkdown(text: string): string {
   return clean
 }
 
+// ====== WHISPER OFFLINE (faster-whisper trong .venv-hmmo) ======
+const WHISPER_MODELS: Record<string, string> = { 'Nhanh': 'small', 'Cân bằng': 'medium', 'Chính xác cao': 'large-v3' }
+const WHISPER_LANGS: Record<string, string> = { 'Tiếng Anh': 'en', 'Tiếng Trung': 'zh', 'Tiếng Việt': 'vi', 'Tiếng Nhật': 'ja', 'Tiếng Hàn': 'ko' }
+
+function runWhisper(audioPath: string, outSrt: string, accuracy: string, lang: string, log: (m: string) => void): Promise<void> {
+  const py = requirePython()
+  const script = engineScript('whisper_srt.py')
+  const model = WHISPER_MODELS[accuracy] || 'small'
+  const args = [script, '--input', audioPath, '--out', outSrt, '--model', model,
+    '--lang', WHISPER_LANGS[lang] || '', '--models-dir', path.join(app.getPath('userData'), 'whisper-models')]
+  return new Promise((resolve, reject) => {
+    const { spawn } = require('child_process')
+    const p = spawn(py, args, { env: { ...process.env, PYTHONIOENCODING: 'utf-8' }, windowsHide: true })
+    let lastPct = -10, err = '', buf = ''
+    p.stdout.on('data', (d: Buffer) => {
+      buf += d.toString('utf8')
+      const lines = buf.split(/\r?\n/); buf = lines.pop() || ''
+      for (const line of lines) {
+        if (line.startsWith('STATUS ')) log(line.slice(7))
+        else if (line.startsWith('PROGRESS ')) {
+          const pct = parseInt(line.slice(9))
+          if (pct - lastPct >= 10 || pct === 100) { lastPct = pct; log(`Whisper: ${pct}%`) }
+        } else if (line.startsWith('ERROR ')) err = line.slice(6)
+      }
+    })
+    p.stderr.on('data', (d: Buffer) => { const t = d.toString('utf8'); if (/Error|error/.test(t)) err = err || t.trim().slice(-500) })
+    p.on('error', (e: Error) => reject(e))
+    p.on('close', (code: number) => {
+      if (code === 0 && fs.existsSync(outSrt)) resolve()
+      else reject(new Error(`Whisper lỗi: ${err || 'mã thoát ' + code}`))
+    })
+  })
+}
+
 // ====== MAIN ENGINE ======
+// Ngân sách ký tự cho mỗi câu khi dịch (≈15 ký tự/giây tiếng Việt, tính cả khoảng lặng trước câu kế) -> bản dịch dễ lồng tiếng
+function dubBudget(srt: string): string {
+  const re = /(\d+)\s*\n\s*(\d+):(\d+):(\d+)[,.](\d+)\s*-->\s*(\d+):(\d+):(\d+)[,.](\d+)/g
+  const items: { id: string; s: number; e: number }[] = []
+  let m: RegExpExecArray | null
+  while ((m = re.exec(srt))) {
+    const t = (a: number) => +m![a] * 3600 + +m![a + 1] * 60 + +m![a + 2] + +m![a + 3].padEnd(3, '0').slice(0, 3) / 1000
+    items.push({ id: m[1], s: t(2), e: t(6) })
+  }
+  return items.map((x, i) => {
+    const end = i + 1 < items.length ? Math.max(x.e, items[i + 1].s - 0.06) : x.e + 1
+    return `${x.id}:${Math.max(8, Math.round((end - x.s) * 15 * 1.15))}`
+  }).join(', ')
+}
+
 export function setupSubtitleEngine(mainWindow: BrowserWindow) {
   ipcMain.handle('subtitle:generate', async (_event, options) => {
     return new Promise(async (resolve, reject) => {
-      const { videoPath, apiKey, translateEnabled, aiEngine } = options
+      const { videoPath, apiKey, translateEnabled, aiEngine, sttEngine, accuracy, lang } = options
+      const useWhisper = sttEngine !== 'Gemini AI (online)'
       
       const parsedPath = path.parse(videoPath)
       const audioPath = path.join(app.getPath('temp'), `${parsedPath.name}_temp_audio.wav`)
-      const outSrtPath = path.join(parsedPath.dir, `${parsedPath.name}.srt`)
-      const outViSrtPath = path.join(parsedPath.dir, `${parsedPath.name}_vi.srt`)
+      // Phụ đề lưu vào thư mục H-MMO › 3. Phụ đề
+      const subDir = workspaceDir('phude')
+      const outSrtPath = path.join(subDir, `${parsedPath.name}.srt`)
+      const outViSrtPath = path.join(subDir, `${parsedPath.name}_vi.srt`)
       
       const log = (msg: string) => mainWindow.webContents.send('subtitle:log', msg)
       
@@ -137,6 +192,12 @@ export function setupSubtitleEngine(mainWindow: BrowserWindow) {
         const audioSize = fs.statSync(audioPath).size
         log(`Trích xuất xong. Kích thước audio: ${(audioSize / 1024 / 1024).toFixed(1)} MB`)
         
+        let cleanedSrt = ''
+        if (useWhisper) {
+          log('Bước 2/3: Nhận diện giọng nói bằng Whisper (offline, chạy trên máy)...')
+          await runWhisper(audioPath, outSrtPath, accuracy, lang, log)
+          cleanedSrt = fs.readFileSync(outSrtPath, 'utf8')
+        } else {
         if (!apiKey) {
           throw new Error('Bạn chưa nhập API Key Gemini. Vui lòng nhập API Key ở mục "Dịch phụ đề bằng AI".')
         }
@@ -206,9 +267,11 @@ If no speech is detected, output:
         ]
         
         const originalSrt = await findAndCallModel(ai, apiKey, sttPrompt, log, 'Nhận diện giọng nói')
-        const cleanedSrt = cleanMarkdown(originalSrt)
+        cleanedSrt = cleanMarkdown(originalSrt)
         
         fs.writeFileSync(outSrtPath, cleanedSrt, 'utf8')
+        }
+        
         log(`Phụ đề gốc đã được lưu: ${outSrtPath}`)
         
         // Dọn file audio tạm
@@ -229,16 +292,25 @@ If no speech is detected, output:
 2. Only translate the subtitle text, NOT the timestamps or sequence numbers.
 3. Output ONLY the raw SRT content, no markdown code blocks.
 4. The translation should sound natural in Vietnamese, not word-by-word.
+5. The Vietnamese text will also be used for voice dubbing, so keep each line concise enough to be spoken inside its own time slot. Stay within the character budget listed below for each sequence number (count spaces); shorten wording rather than dropping meaning.
+
+Character budget per sequence number: ${dubBudget(cleanedSrt)}
 
 ${cleanedSrt}`
           
+          const ai = new GoogleGenAI({ apiKey })
           const translatedSrt = await findAndCallModel(ai, apiKey, translatePrompt, log, 'Dịch phụ đề')
           const cleanedTranslation = cleanMarkdown(translatedSrt)
           
           fs.writeFileSync(outViSrtPath, cleanedTranslation, 'utf8')
           log(`Phụ đề Tiếng Việt đã lưu tại: ${outViSrtPath}`)
+        } else if (aiEngine === 'Gemini AI' && !apiKey) {
+          log('Bỏ qua bước dịch: chưa nhập API Key Gemini.')
         } else if (aiEngine === 'Google (Miễn phí)') {
-          log('Dịch qua Google Translate (Tính năng đang phát triển)...')
+          log('Bước 3/3: Dịch phụ đề sang Tiếng Việt bằng Google Translate (miễn phí)...')
+          const vi = await googleTranslateSrt(cleanedSrt, 'vi', log)
+          fs.writeFileSync(outViSrtPath, vi, 'utf8')
+          log(`Phụ đề Tiếng Việt đã lưu tại: ${outViSrtPath}`)
         }
         
         log('====== HOÀN TẤT ======')
