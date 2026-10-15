@@ -35,6 +35,14 @@ const api = {
   voiceAddClone: (opts: any) => ipcRenderer.invoke('voice:addClone', opts),
   voiceDeleteClone: (name: string) => ipcRenderer.invoke('voice:deleteClone', name),
   voicePreview: (opts: any) => ipcRenderer.invoke('voice:preview', opts),
+  goiSachPickScript: () => ipcRenderer.invoke('goisach:pickScript'),
+  goiSachPickMusic: () => ipcRenderer.invoke('goisach:pickMusic'),
+  goiSachPickOutput: () => ipcRenderer.invoke('goisach:pickOutput'),
+  goiSachParse: (file: string) => ipcRenderer.invoke('goisach:parse', file),
+  goiSachRun: (opts: any) => ipcRenderer.invoke('goisach:run', opts),
+  goiSachCancel: () => ipcRenderer.invoke('goisach:cancel'),
+  goiSachOpen: (dir: string) => ipcRenderer.invoke('goisach:open', dir),
+  onGoiSachProgress: (callback: (p: {progress:number;message:string}) => void) => { const h=(_e: Electron.IpcRendererEvent,p:{progress:number;message:string})=>callback(p); ipcRenderer.on('goisach:progress',h); return ()=>ipcRenderer.removeListener('goisach:progress',h) },
   onVoiceLog: (callback: (log: string) => void) => {
     const handler = (_event: Electron.IpcRendererEvent, log: string) => callback(log)
     ipcRenderer.on('voice:log', handler)

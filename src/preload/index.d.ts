@@ -26,6 +26,14 @@ declare global {
       voiceAddClone: (opts: any) => Promise<any>
       voiceDeleteClone: (name: string) => Promise<any>
       voicePreview: (opts: any) => Promise<any>
+      goiSachPickScript: () => Promise<string | null>
+      goiSachPickMusic: () => Promise<string | null>
+      goiSachPickOutput: () => Promise<string | null>
+      goiSachParse: (file: string) => Promise<any[]>
+      goiSachRun: (opts: any) => Promise<string>
+      goiSachCancel: () => Promise<boolean>
+      goiSachOpen: (dir: string) => Promise<string>
+      onGoiSachProgress: (callback: (p: {progress:number;message:string}) => void) => () => void
       onVoiceLog: (callback: (log: string) => void) => () => void
       douyinConnect: () => Promise<any>
       douyinCookieStatus: () => Promise<any>
