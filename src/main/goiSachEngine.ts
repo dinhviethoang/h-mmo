@@ -194,6 +194,16 @@ export async function renderGoiSach(opts:RenderOptions, onProgress:(p:number,m:s
   fs.writeFileSync(path.join(dir,'subtitles.srt'),subs.join('\n'),'utf8')
   return dir
 }
+/** Chỉ tạo giọng đọc (không dựng video): <outDir>/<tên kịch bản>/audio/long-NNN.mp3 và short-NNN.mp3, bỏ qua file đã có. */
+export async function makeGoiSachAudio(script:string, outDir:string, voice='vieneu:default', onProgress:(p:number,m:string)=>void=()=>{}) {
+  const scenes=parseScript(script), audioDir=path.join(outDir,path.basename(script,path.extname(script)),'audio'); fs.mkdirSync(audioDir,{recursive:true})
+  const jobs=([false,true] as const).flatMap(short=>scenes.filter(s=>s.shorts===short).map((s,i)=>({s,file:path.join(audioDir,`${short?'short':'long'}-${String(i+1).padStart(3,'0')}.mp3`)})))
+  audioCancelled=false
+  for(let i=0;i<jobs.length;i++){if(audioCancelled)throw new Error('Đã dừng.');const {s,file}=jobs[i]; if(!fs.existsSync(file)) await tts(s.narration,file,voice,m=>onProgress(Math.round(i/jobs.length*100),m)); onProgress(Math.round((i+1)/jobs.length*100),`Đã tạo audio ${i+1}/${jobs.length} (${path.basename(file)})`)}
+  return audioDir
+}
+let audioCancelled=false
+export const cancelGoiSach = () => { audioCancelled=true; active?.kill('SIGTERM'); active=null }
 export function setupGoiSachEngine(win:BrowserWindow){
   ipcMain.handle('goisach:parse',(_e,file:string)=>parseScript(file))
   ipcMain.handle('goisach:pickScript',async()=>{const r=await dialog.showOpenDialog(win,{properties:['openFile'],filters:[{name:'Markdown',extensions:['md']}]});return r.canceled?null:r.filePaths[0]})

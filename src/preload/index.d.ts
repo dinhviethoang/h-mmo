@@ -33,6 +33,17 @@ declare global {
       goiSachRun: (opts: any) => Promise<string>
       goiSachCancel: () => Promise<boolean>
       goiSachOpen: (dir: string) => Promise<string>
+      explainerSettings: () => Promise<any>
+      explainerSaveSettings: (s: any) => Promise<any>
+      explainerListScripts: () => Promise<{ file: string; name: string; vid: string }[]>
+      explainerStatus: (script: string) => Promise<any>
+      explainerRun: (script: string, step: string) => Promise<any>
+      explainerCancel: () => Promise<boolean>
+      explainerReceiver: (on: boolean) => Promise<boolean>
+      explainerOpen: (target: string) => Promise<string>
+      onExplainerProgress: (callback: (p: {step:string;done:number;total:number;message:string}) => void) => () => void
+      onExplainerLog: (callback: (line: string) => void) => () => void
+      onExplainerReceiver: (callback: (on: boolean) => void) => () => void
       onGoiSachProgress: (callback: (p: {progress:number;message:string}) => void) => () => void
       onVoiceLog: (callback: (log: string) => void) => () => void
       douyinConnect: () => Promise<any>

@@ -10,7 +10,8 @@ import {
   Layers,
   ClipboardCheck,
   Zap,
-  BookOpen
+  BookOpen,
+  Brush
 } from 'lucide-react';
 import './Sidebar.css';
 import logoGear from '../assets/logo-gear.png';
@@ -35,6 +36,7 @@ export function Sidebar({ currentPath, onNavigate }: SidebarProps) {
     { id: 'autoshorts', icon: Video, label: 'Auto Shorts (AI)' },
     { id: 'autocomic', icon: PenTool, label: 'Auto Comic' },
     { id: 'goisach', icon: BookOpen, label: 'Gối Sách' },
+    { id: 'explainer', icon: Brush, label: 'Video vẽ tay' },
     { id: 'system', icon: Settings, label: 'Hệ thống' },
   ];
 

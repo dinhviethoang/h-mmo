@@ -13,6 +13,7 @@ import { setupAutoComicIPC, startAutoComicServer } from './autoComicTool'
 import { setupDouyinConnect } from './douyinConnect'
 import { setupVoiceEngine } from './voiceEngine'
 import { setupGoiSachEngine } from './goiSachEngine'
+import { setupExplainerEngine } from './explainerEngine'
 import { setupTransformEngine } from './transformEngine'
 import { registerMediaProtocol } from './mediaProtocol'
 import { setupWorkspace } from './workspace'
@@ -110,6 +111,7 @@ app.whenReady().then(() => {
   setupDouyinConnect(mainWindow)
   setupVoiceEngine(mainWindow)
   setupGoiSachEngine(mainWindow)
+  setupExplainerEngine(mainWindow)
   setupTransformEngine(mainWindow)
   setupOcrEngine(mainWindow)
   setupSystemEngine(mainWindow)

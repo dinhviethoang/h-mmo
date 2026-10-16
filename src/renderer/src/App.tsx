@@ -14,11 +14,12 @@ import { AssemblePage } from './pages/AssemblePage';
 import { ReviewPage } from './pages/ReviewPage';
 import { PipelinePage } from './pages/PipelinePage';
 import { GoiSachPage } from './pages/GoiSachPage';
+import { ExplainerPage } from './pages/ExplainerPage';
 
 const SECTION_NAMES: Record<string, string> = {
   pipeline: 'Dây chuyền 1 chạm',
   editor: 'Biên tập video', download: 'Tải xuống YouTube', douyin: 'Tải xuống Douyin', subtitle: 'Tạo phụ đề',
-voices: 'Giọng đọc', transform: 'Hiệu chỉnh video', ocr: 'Đọc chữ video', system: 'Hệ thống', assemble: 'Ghép video', review: 'Chấm chất lượng', autoshorts: 'Auto Shorts', autocomic: 'Auto Comic', goisach: 'Gối Sách'
+voices: 'Giọng đọc', transform: 'Hiệu chỉnh video', ocr: 'Đọc chữ video', system: 'Hệ thống', assemble: 'Ghép video', review: 'Chấm chất lượng', autoshorts: 'Auto Shorts', autocomic: 'Auto Comic', goisach: 'Gối Sách', explainer: 'Video vẽ tay'
 };
 
 function App() {
@@ -54,6 +55,8 @@ function App() {
         return <ReviewPage onNavigate={setCurrentPath} />;
       case 'goisach':
         return <GoiSachPage />;
+      case 'explainer':
+        return <ExplainerPage />;
       default:
         return <EditorPage />;
     }

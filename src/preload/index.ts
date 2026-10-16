@@ -42,6 +42,17 @@ const api = {
   goiSachRun: (opts: any) => ipcRenderer.invoke('goisach:run', opts),
   goiSachCancel: () => ipcRenderer.invoke('goisach:cancel'),
   goiSachOpen: (dir: string) => ipcRenderer.invoke('goisach:open', dir),
+  explainerSettings: () => ipcRenderer.invoke('explainer:settings'),
+  explainerSaveSettings: (s: any) => ipcRenderer.invoke('explainer:saveSettings', s),
+  explainerListScripts: () => ipcRenderer.invoke('explainer:listScripts'),
+  explainerStatus: (script: string) => ipcRenderer.invoke('explainer:status', script),
+  explainerRun: (script: string, step: string) => ipcRenderer.invoke('explainer:run', script, step),
+  explainerCancel: () => ipcRenderer.invoke('explainer:cancel'),
+  explainerReceiver: (on: boolean) => ipcRenderer.invoke('explainer:receiver', on),
+  explainerOpen: (target: string) => ipcRenderer.invoke('explainer:open', target),
+  onExplainerProgress: (callback: (p: {step:string;done:number;total:number;message:string}) => void) => { const h=(_e: Electron.IpcRendererEvent,p:{step:string;done:number;total:number;message:string})=>callback(p); ipcRenderer.on('explainer:progress',h); return ()=>ipcRenderer.removeListener('explainer:progress',h) },
+  onExplainerLog: (callback: (line: string) => void) => { const h=(_e: Electron.IpcRendererEvent,l:string)=>callback(l); ipcRenderer.on('explainer:log',h); return ()=>ipcRenderer.removeListener('explainer:log',h) },
+  onExplainerReceiver: (callback: (on: boolean) => void) => { const h=(_e: Electron.IpcRendererEvent,on:boolean)=>callback(on); ipcRenderer.on('explainer:receiver',h); return ()=>ipcRenderer.removeListener('explainer:receiver',h) },
   onGoiSachProgress: (callback: (p: {progress:number;message:string}) => void) => { const h=(_e: Electron.IpcRendererEvent,p:{progress:number;message:string})=>callback(p); ipcRenderer.on('goisach:progress',h); return ()=>ipcRenderer.removeListener('goisach:progress',h) },
   onVoiceLog: (callback: (log: string) => void) => {
     const handler = (_event: Electron.IpcRendererEvent, log: string) => callback(log)
